@@ -1,0 +1,70 @@
+name: Deploy API to Cloud Run
+
+# One-time GCP setup required before this workflow can run (see chat/README):
+#   1. Enable APIs: run.googleapis.com, artifactregistry.googleapis.com, iamcredentials.googleapis.com
+#   2. Create an Artifact Registry Docker repo named "edukoreaiapi" in the target region
+#   3. Create a deployer service account + Workload Identity Federation pool/provider
+#      trusting this GitHub repo, and grant it roles/run.admin, roles/artifactregistry.writer,
+#      roles/iam.serviceAccountUser
+#   4. Add repo secrets: WIF_PROVIDER, WIF_SERVICE_ACCOUNT, MONGO_URI, DB_NAME,
+#      ANTHROPIC_API_KEY, ANTHROPIC_MODEL
+on:
+  workflow_dispatch:
+
+env:
+  PROJECT_ID: edukoreai
+  REGION: asia-south1
+  SERVICE: edukoreaiapi
+  REPOSITORY: edukoreaiapi
+  IMAGE: asia-south1-docker.pkg.dev/edukoreai/edukoreaiapi/edukoreaiapi
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: PROD
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
+
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
+
+      - name: Build and push image
+        run: |
+          docker build -t ${{ env.IMAGE }}:${{ github.sha }} .
+          docker push ${{ env.IMAGE }}:${{ github.sha }}
+
+      - name: Deploy to Cloud Run
+        id: deploy
+        uses: google-github-actions/deploy-cloudrun@v2
+        with:
+          service: ${{ env.SERVICE }}
+          region: ${{ env.REGION }}
+          image: ${{ env.IMAGE }}:${{ github.sha }}
+          flags: --allow-unauthenticated --port=8080
+          env_vars: |
+            MONGO_URI=${{ secrets.MONGO_URI }}
+            DB_NAME=${{ secrets.DB_NAME }}
+            DB_CONNECTION_TIMEOUT=${{ vars.DB_CONNECTION_TIMEOUT }}
+            ANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }}
+            ANTHROPIC_MODEL=${{ secrets.ANTHROPIC_MODEL }}
+            CORS_ORIGINS=${{ vars.CORS_ORIGINS }}
+
+      - name: Show deployed URL
+        run: echo "Deployed to ${{ steps.deploy.outputs.url }}"

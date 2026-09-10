@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -m py_compile edukoreaiui/screens/generate_questions_screen.py)",
+      "Bash(python -c ' *)"
+    ]
+  }
+}

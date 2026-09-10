@@ -1,0 +1,7 @@
+[project]
+name = "edukoreai"
+version = "1.0.0"
+description = "EduKoreAI Mobile Application"
+
+[tool.flet]
+app_title = "My School Application"

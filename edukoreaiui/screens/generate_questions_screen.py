@@ -10,6 +10,16 @@ QUESTION_TYPES = [
     ("long", "Answer the following questions (Long)"),
 ]
 
+ASSESSMENT_CATEGORIES = [
+    ("fa", "FA - Formative Assessment"),
+    ("sa", "SA - Summative Assessment"),
+]
+
+ASSESSMENT_NUMBERS = [
+    ("1", "1"),
+    ("2", "2"),
+]
+
 # Fixed column widths keep the header and every data row aligned as a table.
 COL_TYPE_WIDTH = 260
 COL_COUNT_WIDTH = 120
@@ -246,6 +256,16 @@ def generate_questions_view(page: ft.Page):
     subject_selector = SelectorState("Subject", on_change=on_subject_selected)
     chapter_selector = SelectorState("Chapter", on_change=on_chapter_selected)
 
+    async def on_assessment_selected():
+        update_rows_visibility()
+        page.update()
+
+    assessment_category_selector = SelectorState("Assessment Category", on_change=on_assessment_selected)
+    assessment_category_selector.set_options([label for _, label in ASSESSMENT_CATEGORIES])
+
+    assessment_number_selector = SelectorState("Assessment Number", on_change=on_assessment_selected)
+    assessment_number_selector.set_options([label for _, label in ASSESSMENT_NUMBERS])
+
     # ── Dynamic question rows ────────────────────────────────────────────
     rows: list[QuestionRow] = []
     rows_column = ft.Column(spacing=0, tight=True)
@@ -293,7 +313,13 @@ def generate_questions_view(page: ft.Page):
     )
 
     def update_rows_visibility():
-        ready = bool(class_selector.value and subject_selector.value and chapter_selector.value)
+        ready = bool(
+            class_selector.value
+            and subject_selector.value
+            and chapter_selector.value
+            and assessment_category_selector.value
+            and assessment_number_selector.value
+        )
         rows_section.visible = ready
         ready_message.visible = not ready
 
@@ -341,8 +367,14 @@ def generate_questions_view(page: ft.Page):
         render_rows()
 
     async def generate_questions_async(e):
-        if not (class_selector.value and subject_selector.value and chapter_selector.value):
-            show_snack("Select class, subject, and chapter.")
+        if not (
+            class_selector.value
+            and subject_selector.value
+            and chapter_selector.value
+            and assessment_category_selector.value
+            and assessment_number_selector.value
+        ):
+            show_snack("Select class, subject, chapter, and assessment.")
             return
         if not rows:
             show_snack("Add at least one question row.")
@@ -355,6 +387,14 @@ def generate_questions_view(page: ft.Page):
 
         # Get current user from session
         current_user = page.session.store.get("current_user") or "unknown"
+
+        # Convert selector chip labels back to their short codes for the API
+        assessment_category_code = next(
+            code for code, label in ASSESSMENT_CATEGORIES if label == assessment_category_selector.value
+        )
+        assessment_number_code = int(
+            next(code for code, label in ASSESSMENT_NUMBERS if label == assessment_number_selector.value)
+        )
 
         # Show loading indicator
         generate_button.disabled = True
@@ -385,6 +425,8 @@ def generate_questions_view(page: ft.Page):
                 class_selector.value,
                 subject_selector.value,
                 chapter_selector.value,
+                assessment_category_code,
+                assessment_number_code,
                 question_rows,
                 current_user,
             )
@@ -451,6 +493,8 @@ def generate_questions_view(page: ft.Page):
             class_selector.field,
             subject_selector.field,
             chapter_selector.field,
+            assessment_category_selector.field,
+            assessment_number_selector.field,
             ready_message,
             rows_section,
             ft.Container(

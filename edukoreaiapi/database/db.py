@@ -195,6 +195,8 @@ def save_generated_questions(
     class_name: str,
     subject: str,
     chapter: str,
+    assessment_category: str,
+    assessment_number: int,
     questions: list[dict],
     question_configuration: list[dict],
     username: str,
@@ -207,6 +209,8 @@ def save_generated_questions(
         class_name: Class name
         subject: Subject
         chapter: Chapter name
+        assessment_category: "fa" (Formative) or "sa" (Summative)
+        assessment_number: 1 or 2
         questions: List of generated question dicts
         question_configuration: List of dicts with questionType, questionCount, marksPerQuestion
         username: Username of the user who generated them
@@ -220,6 +224,8 @@ def save_generated_questions(
             "class": class_name,
             "subject": subject,
             "chapter": chapter,
+            "assessmentCategory": assessment_category,
+            "assessmentNumber": assessment_number,
             "questions": questions,
             "configuration": question_configuration,
             "generated_by": username,
@@ -232,18 +238,21 @@ def save_generated_questions(
     except Exception as exc:
         return {"success": False, "error": str(exc)}
 
-
 def get_generated_questions(
     class_name: str,
     subject: str,
     chapter: str,
+    assessment_category: str,
+    assessment_number: int,
 ) -> dict | None:
-    """Retrieve generated questions for a class/subject/chapter."""
+    """Retrieve generated questions for a class/subject/chapter/assessment."""
     try:
         return get_db().questions.find_one({
             "class": class_name,
             "subject": subject,
             "chapter": chapter,
+            "assessmentCategory": assessment_category,
+            "assessmentNumber": assessment_number,
         })
     except ConnectionFailure:
         return None

@@ -33,5 +33,7 @@ class GenerateQuestionsRequest(BaseModel):
     class_name: str
     subject: str
     chapter: str
+    assessmentCategory: str  # "fa" or "sa"
+    assessmentNumber: int    # 1 or 2
     questionRows: list[QuestionRowConfig]
     username: str

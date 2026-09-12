@@ -140,6 +140,8 @@ def generate_questions(
     class_name: str,
     subject: str,
     chapter: str,
+    assessment_category: str,
+    assessment_number: int,
     question_rows: list[dict],
     username: str,
 ) -> dict:
@@ -150,6 +152,8 @@ def generate_questions(
         class_name: Class name
         subject: Subject
         chapter: Chapter name
+        assessment_category: "fa" or "sa"
+        assessment_number: 1 or 2
         question_rows: List of dicts with questionType, questionCount, marksPerQuestion
         username: Current user's username
 
@@ -163,6 +167,8 @@ def generate_questions(
                 "class_name": class_name,
                 "subject": subject,
                 "chapter": chapter,
+                "assessmentCategory": assessment_category,
+                "assessmentNumber": assessment_number,
                 "questionRows": question_rows,
                 "username": username,
             },

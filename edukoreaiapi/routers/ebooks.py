@@ -96,6 +96,8 @@ def generate_questions(payload: GenerateQuestionsRequest):
             payload.class_name,
             payload.subject,
             payload.chapter,
+            payload.assessmentCategory,
+            payload.assessmentNumber,
             generated_questions,
             question_rows,
             payload.username,

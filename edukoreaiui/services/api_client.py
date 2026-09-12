@@ -142,23 +142,16 @@ def generate_questions(
     chapter: str,
     assessment_category: str,
     assessment_number: int,
+    complexity: str,
     question_rows: list[dict],
     username: str,
 ) -> dict:
     """
     Generate questions using Claude AI based on chapter content and configuration.
 
-    Args:
-        class_name: Class name
-        subject: Subject
-        chapter: Chapter name
-        assessment_category: "fa" or "sa"
-        assessment_number: 1 or 2
-        question_rows: List of dicts with questionType, questionCount, marksPerQuestion
-        username: Current user's username
-
     Returns:
-        {'success': True, 'id': '<id>', 'questions': [...]} or {'success': False, 'error': '...'}
+        {'success': True, 'id': '<id>', 'version': <int>, 'questions': [...]}
+        or {'success': False, 'error': '...'}
     """
     try:
         response = httpx.post(
@@ -169,6 +162,7 @@ def generate_questions(
                 "chapter": chapter,
                 "assessmentCategory": assessment_category,
                 "assessmentNumber": assessment_number,
+                "complexity": complexity,
                 "questionRows": question_rows,
                 "username": username,
             },
@@ -178,3 +172,29 @@ def generate_questions(
         return response.json()
     except httpx.HTTPError as exc:
         return _connection_error(exc)
+
+
+def get_question_versions(
+    class_name: str,
+    subject: str,
+    chapter: str,
+    assessment_category: str,
+    assessment_number: int,
+) -> list[int]:
+    """Return every saved version number for this class/subject/chapter/assessment combo."""
+    try:
+        response = httpx.get(
+            f"{API_BASE_URL}/api/ebooks/question-versions",
+            params={
+                "class_name": class_name,
+                "subject": subject,
+                "chapter": chapter,
+                "assessment_category": assessment_category,
+                "assessment_number": assessment_number,
+            },
+            timeout=_TIMEOUT,
+        )
+        response.raise_for_status()
+        return response.json().get("versions", [])
+    except httpx.HTTPError:
+        return []

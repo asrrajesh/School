@@ -8,6 +8,7 @@ from database.db import (
     save_scanned_chapter,
     save_generated_questions,
     get_generated_questions,
+    get_question_versions,
 )
 from services.claude_ocr import extract_text_from_images
 from services.claude_questions import generate_questions_from_chapter
@@ -66,16 +67,29 @@ async def scan(images: list[UploadFile] = File(...)):
         return {"success": False, "error": str(exc)}
 
 
+@router.get("/question-versions")
+def list_question_versions(
+    class_name: str,
+    subject: str,
+    chapter: str,
+    assessment_category: str,
+    assessment_number: int,
+):
+    """List every saved version number for a class/subject/chapter/assessment combo."""
+    versions = get_question_versions(class_name, subject, chapter, assessment_category, assessment_number)
+    return {"versions": versions}
+
+
 @router.post("/generate-questions")
 def generate_questions(payload: GenerateQuestionsRequest):
     """
     Generate questions using Claude AI based on chapter content and configuration.
 
     Fetches the chapter content, uses Claude to generate questions according to the
-    user-configured question types/counts/marks, and saves them to the database.
+    user-configured question types/counts/marks/complexity, and saves them under
+    the next version number for this class/subject/chapter/assessment.
     """
     try:
-        # Fetch chapter content
         chapter_record = get_scanned_chapter(payload.class_name, payload.subject, payload.chapter)
         if not chapter_record or not chapter_record.get("content"):
             return {
@@ -84,20 +98,19 @@ def generate_questions(payload: GenerateQuestionsRequest):
             }
 
         chapter_content = chapter_record["content"]
-
-        # Convert question rows to dicts for the service
         question_rows = [row.model_dump() for row in payload.questionRows]
 
-        # Generate questions using Claude
-        generated_questions = generate_questions_from_chapter(chapter_content, question_rows)
+        generated_questions = generate_questions_from_chapter(
+            chapter_content, question_rows, payload.complexity
+        )
 
-        # Save to database
         db_result = save_generated_questions(
             payload.class_name,
             payload.subject,
             payload.chapter,
             payload.assessmentCategory,
             payload.assessmentNumber,
+            payload.complexity,
             generated_questions,
             question_rows,
             payload.username,
@@ -109,8 +122,9 @@ def generate_questions(payload: GenerateQuestionsRequest):
         return {
             "success": True,
             "id": db_result["id"],
+            "version": db_result["version"],
             "questions": generated_questions,
-            "message": f"Generated {len(generated_questions)} questions successfully.",
+            "message": f"Generated {len(generated_questions)} questions successfully (Version {db_result['version']}).",
         }
 
     except Exception as exc:

@@ -1,5 +1,6 @@
-from pydantic import BaseModel
+from typing import Literal
 
+from pydantic import BaseModel
 
 class LoginRequest(BaseModel):
     username: str
@@ -35,5 +36,6 @@ class GenerateQuestionsRequest(BaseModel):
     chapter: str
     assessmentCategory: str  # "fa" or "sa"
     assessmentNumber: int    # 1 or 2
+    complexity: Literal["basic", "intermediate", "advanced"]
     questionRows: list[QuestionRowConfig]
     username: str

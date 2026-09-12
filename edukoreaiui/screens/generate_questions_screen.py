@@ -1,6 +1,6 @@
 import asyncio
 import flet as ft
-from services.api_client import get_classes, get_chapters, get_subjects
+from services.api_client import get_classes, get_chapters, get_subjects, get_question_versions
 from services.api_client import generate_questions as api_generate_questions
 
 # (key, label) — label is the text shown to the user in the dropdown
@@ -18,6 +18,12 @@ ASSESSMENT_CATEGORIES = [
 ASSESSMENT_NUMBERS = [
     ("1", "1"),
     ("2", "2"),
+]
+
+COMPLEXITY_LEVELS = [
+    ("basic", "Basic"),
+    ("intermediate", "Intermediate"),
+    ("advanced", "Advanced"),
 ]
 
 # Fixed column widths keep the header and every data row aligned as a table.
@@ -236,6 +242,7 @@ def generate_questions_view(page: ft.Page):
             subject_selector.set_options(
                 subjects, empty_text="No subjects found for this class. Scan e-books first."
             )
+        await refresh_downloads()
         page.update()
 
     async def on_subject_selected():
@@ -246,10 +253,12 @@ def generate_questions_view(page: ft.Page):
             chapter_selector.set_options(
                 chapters, empty_text="No chapters found for this subject. Scan e-books first."
             )
+        await refresh_downloads()
         page.update()
 
     async def on_chapter_selected():
         update_rows_visibility()
+        await refresh_downloads()
         page.update()
 
     class_selector = SelectorState("Class", on_change=on_class_selected)
@@ -258,6 +267,7 @@ def generate_questions_view(page: ft.Page):
 
     async def on_assessment_selected():
         update_rows_visibility()
+        await refresh_downloads()
         page.update()
 
     assessment_category_selector = SelectorState("Assessment Category", on_change=on_assessment_selected)
@@ -265,6 +275,60 @@ def generate_questions_view(page: ft.Page):
 
     assessment_number_selector = SelectorState("Assessment Number", on_change=on_assessment_selected)
     assessment_number_selector.set_options([label for _, label in ASSESSMENT_NUMBERS])
+
+    # ── Complexity: single, request-wide setting (not repeated per row) ───
+    async def on_complexity_selected():
+        page.update()
+
+    complexity_selector = SelectorState("Complexity", on_change=on_complexity_selected)
+    complexity_selector.set_options([label for _, label in COMPLEXITY_LEVELS])
+
+    # ── Downloads: previously generated versions for the current selection ─
+    async def on_download_selected():
+        # Currently just highlights the chosen chip. Hook a fetch here (see
+        # get_questions_for_version in api_client.py) if you want selecting a
+        # version to actually load/preview its questions.
+        page.update()
+
+    downloads_selector = SelectorState("Downloads", on_change=on_download_selected)
+    downloads_selector.field.visible = False
+
+    def _selected_assessment_codes():
+        """Map the assessment category/number chip labels back to API codes."""
+        category_code = next(
+            code for code, label in ASSESSMENT_CATEGORIES if label == assessment_category_selector.value
+        )
+        number_code = int(
+            next(code for code, label in ASSESSMENT_NUMBERS if label == assessment_number_selector.value)
+        )
+        return category_code, number_code
+
+    async def refresh_downloads():
+        ready = bool(
+            class_selector.value
+            and subject_selector.value
+            and chapter_selector.value
+            and assessment_category_selector.value
+            and assessment_number_selector.value
+        )
+        downloads_selector.field.visible = ready
+        if not ready:
+            downloads_selector.set_options([])
+            return
+
+        category_code, number_code = _selected_assessment_codes()
+        versions = await asyncio.to_thread(
+            get_question_versions,
+            class_selector.value,
+            subject_selector.value,
+            chapter_selector.value,
+            category_code,
+            number_code,
+        )
+        downloads_selector.set_options(
+            [f"Version {v}" for v in versions],
+            empty_text="No versions generated yet for this selection.",
+        )
 
     # ── Dynamic question rows ────────────────────────────────────────────
     rows: list[QuestionRow] = []
@@ -306,6 +370,7 @@ def generate_questions_view(page: ft.Page):
     rows_section = ft.Column(
         controls=[
             ft.Text("Question Configuration", size=16, weight=ft.FontWeight.BOLD, color="#1a237e"),
+            complexity_selector.field,
             table,
         ],
         spacing=12,
@@ -373,8 +438,9 @@ def generate_questions_view(page: ft.Page):
             and chapter_selector.value
             and assessment_category_selector.value
             and assessment_number_selector.value
+            and complexity_selector.value
         ):
-            show_snack("Select class, subject, chapter, and assessment.")
+            show_snack("Select class, subject, chapter, assessment, and complexity.")
             return
         if not rows:
             show_snack("Add at least one question row.")
@@ -385,18 +451,13 @@ def generate_questions_view(page: ft.Page):
                 show_snack(error)
                 return
 
-        # Get current user from session
         current_user = page.session.store.get("current_user") or "unknown"
 
-        # Convert selector chip labels back to their short codes for the API
-        assessment_category_code = next(
-            code for code, label in ASSESSMENT_CATEGORIES if label == assessment_category_selector.value
-        )
-        assessment_number_code = int(
-            next(code for code, label in ASSESSMENT_NUMBERS if label == assessment_number_selector.value)
+        assessment_category_code, assessment_number_code = _selected_assessment_codes()
+        complexity_code = next(
+            code for code, label in COMPLEXITY_LEVELS if label == complexity_selector.value
         )
 
-        # Show loading indicator
         generate_button.disabled = True
         generate_button.content = ft.Row(
             controls=[
@@ -409,7 +470,6 @@ def generate_questions_view(page: ft.Page):
         page.update()
 
         try:
-            # Prepare question rows data
             question_rows = [
                 {
                     "questionType": row.type_dropdown.value,
@@ -419,7 +479,6 @@ def generate_questions_view(page: ft.Page):
                 for row in rows
             ]
 
-            # Call API to generate questions
             result = await asyncio.to_thread(
                 api_generate_questions,
                 class_selector.value,
@@ -427,16 +486,22 @@ def generate_questions_view(page: ft.Page):
                 chapter_selector.value,
                 assessment_category_code,
                 assessment_number_code,
+                complexity_code,
                 question_rows,
                 current_user,
             )
 
             if result.get("success"):
                 num_questions = len(result.get("questions", []))
+                version = result.get("version")
+                version_note = f" (Version {version})" if version else ""
                 show_snack(
-                    f"✓ Generated {num_questions} questions successfully!",
+                    f"✓ Generated {num_questions} questions successfully!{version_note}",
                     color=ft.Colors.GREEN_700,
                 )
+                await refresh_downloads()
+                if version:
+                    downloads_selector.select(f"Version {version}")
             else:
                 error_msg = result.get("error", "Unknown error occurred.")
                 show_snack(f"Generation failed: {error_msg}", color=ft.Colors.RED_600)
@@ -445,7 +510,6 @@ def generate_questions_view(page: ft.Page):
             show_snack(f"Error: {str(exc)}", color=ft.Colors.RED_600)
 
         finally:
-            # Reset button
             generate_button.disabled = False
             generate_button.content = ft.Text("GENERATE QUESTIONS", weight=ft.FontWeight.BOLD)
             page.update()
@@ -467,7 +531,6 @@ def generate_questions_view(page: ft.Page):
     )
     page.drawer = None
 
-    # Create button as a variable so we can update it during loading
     generate_button = ft.ElevatedButton(
         content=ft.Text("GENERATE QUESTIONS", weight=ft.FontWeight.BOLD),
         color=ft.Colors.WHITE,
@@ -495,6 +558,7 @@ def generate_questions_view(page: ft.Page):
             chapter_selector.field,
             assessment_category_selector.field,
             assessment_number_selector.field,
+            downloads_selector.field,
             ready_message,
             rows_section,
             ft.Container(

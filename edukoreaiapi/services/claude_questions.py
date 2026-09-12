@@ -5,10 +5,26 @@ import anthropic
 
 from config.config import ANTHROPIC_API_KEY, ANTHROPIC_MODEL
 
+_COMPLEXITY_GUIDANCE = {
+    "basic": (
+        "Basic — test direct recall and simple definitions straight from the "
+        "chapter. Keep language simple and avoid multi-step reasoning."
+    ),
+    "intermediate": (
+        "Intermediate — mix recall with 'why' and 'how' questions that require "
+        "understanding and applying a concept, not just repeating it."
+    ),
+    "advanced": (
+        "Advanced — favor higher-order thinking: analysis, comparison, or "
+        "connecting multiple concepts from the chapter. Avoid pure recall."
+    ),
+}
+
 
 def generate_questions_from_chapter(
     chapter_content: str,
     question_rows: list[dict],
+    complexity: str = "intermediate",
 ) -> list[dict]:
     """
     Generate questions using Claude AI.
@@ -19,6 +35,8 @@ def generate_questions_from_chapter(
             - questionType: "mcq" | "short" | "long"
             - questionCount: number of questions
             - marksPerQuestion: marks per question
+        complexity: Overall difficulty for every question generated —
+            "basic" | "intermediate" | "advanced".
 
     Returns:
         List of generated questions with type, text, options (for MCQ), marks.
@@ -26,7 +44,6 @@ def generate_questions_from_chapter(
     if not ANTHROPIC_API_KEY:
         raise ValueError("Anthropic API key is not configured.")
 
-    # Build question requirements
     requirements = []
     for row in question_rows:
         q_type = row.get("questionType", "").lower()
@@ -49,10 +66,18 @@ def generate_questions_from_chapter(
                 f"with a detailed answer key (3-5 sentences)"
             )
 
+    complexity_key = (complexity or "intermediate").strip().lower()
+    complexity_instruction = _COMPLEXITY_GUIDANCE.get(
+        complexity_key, _COMPLEXITY_GUIDANCE["intermediate"]
+    )
+
     prompt = f"""You are an expert teacher. Generate questions based on the following chapter content.
 
 CHAPTER CONTENT:
 {chapter_content}
+
+DIFFICULTY LEVEL FOR ALL QUESTIONS: {complexity_key.capitalize()}
+{complexity_instruction}
 
 QUESTIONS TO GENERATE:
 {chr(10).join(requirements)}
@@ -77,6 +102,7 @@ Guidelines:
 - For short/long answers: Provide clear, concise answer keys.
 - Questions should be diverse and cover different parts of the chapter.
 - Ensure questions test understanding, not just recall.
+- Match the {complexity_key} difficulty level described above for every question.
 - Make sure the total marks matches the configuration (count × marksPerQuestion).
 
 Return ONLY valid JSON, no additional text."""
@@ -86,12 +112,7 @@ Return ONLY valid JSON, no additional text."""
         response = client.messages.create(
             model=ANTHROPIC_MODEL,
             max_tokens=4096,
-            messages=[
-                {
-                    "role": "user",
-                    "content": prompt,
-                }
-            ],
+            messages=[{"role": "user", "content": prompt}],
         )
     except anthropic.AuthenticationError as exc:
         raise RuntimeError(
@@ -106,27 +127,21 @@ Return ONLY valid JSON, no additional text."""
     except anthropic.APIStatusError as exc:
         raise RuntimeError(f"Claude request failed ({exc.status_code}): {exc.message}") from exc
 
-    # Extract text response and parse JSON
     response_text = "".join(block.text for block in response.content if block.type == "text").strip()
 
     if not response_text:
         raise RuntimeError("Claude returned an empty response. Check chapter content and try again.")
 
-    # Strip markdown code block wrapper if present (Claude sometimes wraps JSON in ```json ... ```)
     if response_text.startswith("```"):
-        # Remove opening ```json or ``` and closing ```
         response_text = response_text.strip("`").strip()
-        # Remove "json" language identifier if present
         if response_text.startswith("json"):
             response_text = response_text[4:].strip()
 
     try:
-        # Try to parse the response as JSON
         data = json.loads(response_text)
         questions = data.get("questions", [])
         return questions
     except json.JSONDecodeError as exc:
-        # Show first 500 chars of response for debugging
         preview = response_text[:500] if len(response_text) > 500 else response_text
         raise RuntimeError(
             f"Failed to parse Claude's response as JSON: {exc}\n"

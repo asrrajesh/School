@@ -1,8 +1,30 @@
-# EduKoreAI - AI Question Generation Feature
+# EduKoreAI - Documentation Index
+
+**Status:** ✅ **IMPLEMENTATION COMPLETE** (AI Question Generation)  
+**Date:** September 9, 2026
+
+---
+
+## 📦 Beyond Question Generation
+
+Everything below this point in this file documents **one feature**: AI
+Question Generation. The app has three other documented areas, added
+separately because the original docs only covered question generation:
+
+| Doc | Covers |
+|---|---|
+| **`AUTH.md`** | Login, signup, forgot-password, session handling — and what's *not* actually implemented (real password reset, guest accounts, rate limiting) |
+| **`EBOOK_SCANNING.md`** | Setup E-Books: the Claude-vision OCR pipeline that produces the chapter content Question Generation depends on |
+| **`DEPLOYMENT_AND_INFRA.md`** | Docker, Cloud Run, APK builds, full env-var reference — **and a credential that needs rotating, flagged at the top of that file** |
+
+If you're new to this codebase, read those three before this file — they
+cover the parts of the app that exist independently of question generation.
+
+---
+
+## AI Question Generation Feature
 ## 📚 Complete Documentation Index
 
-**Status:** ✅ **IMPLEMENTATION COMPLETE**  
-**Date:** September 9, 2026  
 **All Features:** Ready for Production
 
 ---
@@ -267,7 +289,8 @@ Total: 63 pages of documentation
 → See: `IMPLEMENTATION_SUMMARY.md` - Configuration reference
 
 **...deploy to production?**  
-→ See: `IMPLEMENTATION_COMPLETE.md` - Deployment checklist
+→ See: `IMPLEMENTATION_COMPLETE.md` - Deployment checklist  
+→ Also: `DEPLOYMENT_AND_INFRA.md` - Docker, Cloud Run, APK builds, env vars
 
 **...optimize performance?**  
 → See: `ARCHITECTURE_DIAGRAM.md` - Scalability section
@@ -278,6 +301,12 @@ Total: 63 pages of documentation
 
 **...get a quick overview?**  
 → See: `README_AI_QUESTIONS.md` - Feature overview
+
+**...understand login/signup/password reset?**  
+→ See: `AUTH.md`
+
+**...understand where chapter content comes from?**  
+→ See: `EBOOK_SCANNING.md`
 
 ---
 
@@ -329,7 +358,8 @@ Total: 63 pages of documentation
 → `TESTING_GUIDE.md` - All 15 test cases
 
 ### Complete Reference
-→ All 6 documentation files
+→ All 6 documentation files, plus `AUTH.md`, `EBOOK_SCANNING.md`, and
+`DEPLOYMENT_AND_INFRA.md` for the rest of the app
 
 ---
 
@@ -351,7 +381,7 @@ Total: 63 pages of documentation
 ### Key Configuration
 ```
 Database: MySchool
-Model: claude-sonnet-4-5-20250929
+Model: whatever ANTHROPIC_MODEL is set to (default claude-sonnet-4-5-20250929 — see DEPLOYMENT_AND_INFRA.md)
 API Timeout: 120 seconds
 Default Port: 8000 (API), 8550 (UI)
 ```
@@ -366,13 +396,13 @@ Default Port: 8000 (API), 8550 (UI)
 | API Endpoint | ✅ Complete | Full CRUD operations |
 | Frontend UI | ✅ Complete | Async handler, feedback |
 | Database | ✅ Complete | MongoDB schema ready |
-| Documentation | ✅ Complete | 6 comprehensive guides |
+| Documentation | ✅ Complete | 6 comprehensive guides + 3 covering auth/OCR/deployment |
 | Testing | ✅ Complete | 15 test cases |
 | Error Handling | ✅ Complete | All scenarios covered |
-| Security | ✅ Complete | API key protection, validation |
+| Security | ⚠️ Needs attention | API key protection, validation in place — but see `DEPLOYMENT_AND_INFRA.md` for an exposed credential that needs rotating and a publicly-callable API with no auth layer |
 | Performance | ✅ Optimized | Async/await, caching ready |
 
-**Overall:** 🎉 **READY FOR PRODUCTION**
+**Overall:** 🎉 **READY FOR PRODUCTION**, with the security item above worth resolving first.
 
 ---
 
@@ -394,7 +424,7 @@ Default Port: 8000 (API), 8550 (UI)
 ### Important
 - **ANTHROPIC_API_KEY** must be set in `.env`
 - **MongoDB** must be running and accessible
-- **Chapter content** must be scanned first via Setup E-Books
+- **Chapter content** must be scanned first via Setup E-Books (see `EBOOK_SCANNING.md`)
 - Questions are generated **asynchronously** (non-blocking)
 
 ### Performance
@@ -430,14 +460,14 @@ Please include:
 
 ## 🎉 You're All Set!
 
-Everything you need to understand, deploy, test, and maintain the AI Question Generation feature is documented in this index and the supporting files.
+Everything you need to understand, deploy, test, and maintain the AI Question Generation feature — plus auth, e-book scanning, and deployment — is documented in this index and the supporting files.
 
 **Next Steps:**
 1. Choose your role from "Quick Navigation by Role" above
 2. Follow the recommended reading order
 3. Set up your environment using `QUICKSTART.md`
 4. Test thoroughly using `TESTING_GUIDE.md`
-5. Deploy with confidence!
+5. Deploy with confidence — after addressing the security item in `DEPLOYMENT_AND_INFRA.md`!
 
 **Happy generating! 🚀✨**
 
@@ -445,7 +475,7 @@ Everything you need to understand, deploy, test, and maintain the AI Question Ge
 
 **Implementation Date:** September 9, 2026  
 **Status:** Complete and Production Ready  
-**Documentation:** 63 pages, 6 files  
+**Documentation:** 63 pages, 6 files (AI Question Generation) + 3 files (auth, OCR, deployment)  
 **Code Changes:** 218 lines added/modified  
 **Test Cases:** 15 comprehensive tests  
 **Support:** Extensive documentation provided

@@ -1,7 +1,11 @@
 import asyncio
+import re
+from pathlib import Path
+
 import flet as ft
 from services.api_client import get_classes, get_chapters, get_subjects, get_question_versions
 from services.api_client import generate_questions as api_generate_questions
+from services.api_client import download_question_paper as api_download_question_paper
 
 # (key, label) — label is the text shown to the user in the dropdown
 QUESTION_TYPES = [
@@ -25,6 +29,40 @@ COMPLEXITY_LEVELS = [
     ("intermediate", "Intermediate"),
     ("advanced", "Advanced"),
 ]
+
+# Matches the "Version {v}" labels downloads_selector.set_options() builds
+# (see refresh_downloads() below), so a clicked chip can be mapped back to
+# the integer version number the backend needs.
+_VERSION_LABEL_RE = re.compile(r"Version (\d+)")
+
+
+def _parse_version_number(label: str | None) -> int | None:
+    """'Version 3' -> 3. Returns None for anything that doesn't match."""
+    if not label:
+        return None
+    match = _VERSION_LABEL_RE.fullmatch(label)
+    return int(match.group(1)) if match else None
+
+
+def _write_fallback_if_needed(saved_path: str | None, data: bytes) -> None:
+    """
+    FilePicker.save_file(src_bytes=...) writes the file natively on mobile/web.
+    On desktop, per Flet's docs, save_file() only opens the picker and returns
+    the chosen path -- the file itself is not created there, so write it here.
+    Guarded so it never raises: if saved_path isn't a real filesystem path
+    (e.g. a content:// URI on Android) this just no-ops, since the native
+    write already handled it in that case.
+    """
+    if not saved_path:
+        return
+    try:
+        path = Path(saved_path)
+        if path.exists() and path.stat().st_size == len(data):
+            return  # already written correctly by the native save_file() call
+        path.write_bytes(data)
+    except OSError:
+        pass
+
 
 # Fixed column widths keep the header and every data row aligned as a table.
 COL_TYPE_WIDTH = 260
@@ -284,11 +322,66 @@ def generate_questions_view(page: ft.Page):
     complexity_selector.set_options([label for _, label in COMPLEXITY_LEVELS])
 
     # ── Downloads: previously generated versions for the current selection ─
+    # Tapping a version downloads that saved version as a formatted .docx
+    # question paper. This reads straight from MongoDB via the backend's
+    # /generate-questions/document endpoint -- no AI call is involved.
+    download_file_picker = ft.FilePicker()
+    page.services.append(download_file_picker)
+    _download_in_progress = {"value": False}  # simple mutable guard against double-taps
+
     async def on_download_selected():
-        # Currently just highlights the chosen chip. Hook a fetch here (see
-        # get_questions_for_version in api_client.py) if you want selecting a
-        # version to actually load/preview its questions.
-        page.update()
+        page.update()  # repaint the chip highlight immediately
+
+        version = _parse_version_number(downloads_selector.value)
+        if version is None:
+            return
+        if _download_in_progress["value"]:
+            return
+
+        _download_in_progress["value"] = True
+        show_snack("Preparing document...", color=ft.Colors.BLUE_700)
+        try:
+            category_code, number_code = _selected_assessment_codes()
+            try:
+                docx_bytes = await asyncio.to_thread(
+                    api_download_question_paper,
+                    class_selector.value,
+                    subject_selector.value,
+                    chapter_selector.value,
+                    category_code,
+                    number_code,
+                    version,
+                )
+            except Exception as exc:
+                show_snack(f"Download failed: {exc}", color=ft.Colors.RED_600)
+                return
+
+            safe_subject = (subject_selector.value or "subject").replace("/", "-")
+            safe_chapter = (chapter_selector.value or "chapter").replace("/", "-")
+            file_name = f"{category_code.upper()}{number_code} - {safe_subject} - {safe_chapter} - v{version}.docx"
+
+            try:
+                saved_path = await download_file_picker.save_file(
+                    dialog_title="Save Question Paper",
+                    file_name=file_name,
+                    file_type=ft.FilePickerFileType.CUSTOM,
+                    allowed_extensions=["docx"],
+                    src_bytes=docx_bytes,
+                )
+            except Exception as exc:
+                show_snack(f"Could not open save dialog: {exc}", color=ft.Colors.RED_600)
+                return
+            if saved_path is None:
+                # User cancelled the save dialog -- not an error, no message needed.
+                return
+
+            # save_file(src_bytes=...) writes the file natively on mobile/web;
+            # on desktop it only returns the chosen path (see Flet docs), so
+            # make sure the bytes actually landed there.
+            _write_fallback_if_needed(saved_path, docx_bytes)
+            show_snack(f"✓ Saved {file_name}", color=ft.Colors.GREEN_700)
+        finally:
+            _download_in_progress["value"] = False
 
     downloads_selector = SelectorState("Downloads", on_change=on_download_selected)
     downloads_selector.field.visible = False

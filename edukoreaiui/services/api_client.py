@@ -198,3 +198,45 @@ def get_question_versions(
         return response.json().get("versions", [])
     except httpx.HTTPError:
         return []
+
+
+def download_question_paper(
+    class_name: str,
+    subject: str,
+    chapter: str,
+    assessment_category: str,
+    assessment_number: int,
+    version: int,
+) -> bytes:
+    """
+    Download a previously-generated, saved version of a question paper as a
+    formatted .docx file. This reads straight from the saved MongoDB data on
+    the backend -- no AI/Claude call is made for this request.
+
+    Returns the raw .docx bytes on success. Raises RuntimeError on failure
+    (network error, or the backend returning an error status such as a 404
+    for a version that no longer exists).
+    """
+    try:
+        response = httpx.get(
+            f"{API_BASE_URL}/api/ebooks/generate-questions/document",
+            params={
+                "class_name": class_name,
+                "subject": subject,
+                "chapter": chapter,
+                "assessment_category": assessment_category,
+                "assessment_number": assessment_number,
+                "version": version,
+            },
+            timeout=_TIMEOUT,
+        )
+        response.raise_for_status()
+        return response.content
+    except httpx.HTTPStatusError as exc:
+        try:
+            detail = exc.response.json().get("detail", exc.response.text)
+        except ValueError:
+            detail = exc.response.text
+        raise RuntimeError(detail or f"Download failed ({exc.response.status_code}).") from exc
+    except httpx.HTTPError as exc:
+        raise RuntimeError(f"Cannot reach the API server at {API_BASE_URL}. ({exc})") from exc

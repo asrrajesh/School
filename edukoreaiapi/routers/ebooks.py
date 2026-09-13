@@ -1,4 +1,7 @@
-from fastapi import APIRouter, File, Form, UploadFile
+from urllib.parse import quote
+
+from fastapi import APIRouter, File, Form, HTTPException, UploadFile
+from fastapi.responses import Response
 
 from database.db import (
     get_scanned_chapter,
@@ -12,6 +15,7 @@ from database.db import (
 )
 from services.claude_ocr import extract_text_from_images
 from services.claude_questions import generate_questions_from_chapter
+from services.paper_generator import generate_question_paper_docx
 from schemas import SaveChapterRequest, GenerateQuestionsRequest
 
 router = APIRouter(prefix="/api/ebooks", tags=["ebooks"])
@@ -129,3 +133,55 @@ def generate_questions(payload: GenerateQuestionsRequest):
 
     except Exception as exc:
         return {"success": False, "error": str(exc)}
+
+
+@router.get("/generate-questions/document")
+def download_question_paper(
+    class_name: str,
+    subject: str,
+    chapter: str,
+    assessment_category: str,
+    assessment_number: int,
+    version: int,
+):
+    """
+    Download a previously-generated, saved version of a question paper as a
+    formatted .docx file.
+
+    This does NOT call Claude / any AI service -- it reads the already-saved
+    questions for the given class/subject/chapter/assessment/version straight
+    from MongoDB (via get_generated_questions) and renders them into a Word
+    document. Returns 404 if that version doesn't exist.
+    """
+    document = get_generated_questions(
+        class_name, subject, chapter, assessment_category, assessment_number, version
+    )
+    if not document:
+        raise HTTPException(
+            status_code=404,
+            detail=(
+                f"No saved questions found for {class_name} / {subject} / {chapter} "
+                f"({assessment_category.upper()} {assessment_number}, Version {version})."
+            ),
+        )
+
+    try:
+        docx_bytes = generate_question_paper_docx(document)
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+    safe_subject = subject.replace("/", "-")
+    safe_chapter = chapter.replace("/", "-")
+    filename = f"{assessment_category.upper()}{assessment_number} - {safe_subject} - {safe_chapter} - v{version}.docx"
+    encoded_filename = quote(filename)
+
+    return Response(
+        content=docx_bytes,
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        headers={
+            "Content-Disposition": (
+                f"attachment; filename=\"{filename.encode('ascii', 'ignore').decode() or 'question_paper.docx'}\"; "
+                f"filename*=UTF-8''{encoded_filename}"
+            )
+        },
+    )

@@ -147,3 +147,103 @@ Return ONLY valid JSON, no additional text."""
             f"Failed to parse Claude's response as JSON: {exc}\n"
             f"Response preview: {preview}"
         ) from exc
+
+
+def extract_questions_from_paper(
+    paper_text: str,
+    complexity: str = "intermediate",
+) -> list[dict]:
+    """
+    Extract questions from an uploaded question paper (text extracted from images).
+
+    This analyzes the paper text and extracts the questions, trying to identify
+    question types, marks, options (for MCQ), and answer keys where available.
+
+    Args:
+        paper_text: The extracted text from uploaded question paper images.
+        complexity: The difficulty level to assign extracted questions.
+
+    Returns:
+        List of extracted questions with type, text, options (for MCQ), marks.
+    """
+    if not ANTHROPIC_API_KEY:
+        raise ValueError("Anthropic API key is not configured.")
+
+    complexity_key = (complexity or "intermediate").strip().lower()
+
+    prompt = f"""You are an expert teacher analyzing an uploaded question paper.
+Extract all questions from the following paper text and identify:
+1. Question type (MCQ, short-answer, or long-answer based on number of options and answer length)
+2. Question text
+3. Marks (if visible in the paper)
+4. Options (for MCQ questions)
+5. Correct answer/answer key (if present in the paper)
+
+QUESTION PAPER TEXT:
+{paper_text}
+
+Extract the questions in JSON format with the following structure:
+{{
+  "questions": [
+    {{
+      "type": "mcq" | "short" | "long",
+      "marks": <number or 1 if not found>,
+      "question": "<question text>",
+      "options": ["A", "B", "C", "D"],  // only for MCQ
+      "correctOption": "A",  // only for MCQ (if found in answer key)
+      "answerKey": "<answer or explanation if found>"
+    }},
+    ...
+  ]
+}}
+
+Guidelines:
+- If marks are not clearly visible, assign 1 mark for MCQ, 2 for short, 5 for long.
+- For MCQ: Extract exactly 4 options if available, labeled A, B, C, D.
+- Identify correct answer from the paper's answer key if present.
+- Preserve the exact question text from the paper.
+- If answerKey is not in the paper, leave it as empty string "".
+- Be strict about identifying question types based on the actual format in the paper.
+
+Return ONLY valid JSON, no additional text."""
+
+    try:
+        client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+        response = client.messages.create(
+            model=ANTHROPIC_MODEL,
+            max_tokens=4096,
+            messages=[{"role": "user", "content": prompt}],
+        )
+    except anthropic.AuthenticationError as exc:
+        raise RuntimeError(
+            "Claude denied the API key. Create an active Anthropic API key and update ANTHROPIC_API_KEY in .env."
+        ) from exc
+    except anthropic.PermissionDeniedError as exc:
+        raise RuntimeError(
+            "Claude denied access to the configured model. Check ANTHROPIC_MODEL and your Anthropic account permissions."
+        ) from exc
+    except anthropic.APIConnectionError as exc:
+        raise RuntimeError("Could not reach Claude. Check your internet connection.") from exc
+    except anthropic.APIStatusError as exc:
+        raise RuntimeError(f"Claude request failed ({exc.status_code}): {exc.message}") from exc
+
+    response_text = "".join(block.text for block in response.content if block.type == "text").strip()
+
+    if not response_text:
+        raise RuntimeError("Claude returned an empty response. Check the paper quality and try again.")
+
+    if response_text.startswith("```"):
+        response_text = response_text.strip("`").strip()
+        if response_text.startswith("json"):
+            response_text = response_text[4:].strip()
+
+    try:
+        data = json.loads(response_text)
+        questions = data.get("questions", [])
+        return questions
+    except json.JSONDecodeError as exc:
+        preview = response_text[:500] if len(response_text) > 500 else response_text
+        raise RuntimeError(
+            f"Failed to parse Claude's response as JSON: {exc}\n"
+            f"Response preview: {preview}"
+        ) from exc

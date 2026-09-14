@@ -3,9 +3,17 @@ import re
 from pathlib import Path
 
 import flet as ft
-from services.api_client import get_classes, get_chapters, get_subjects, get_question_versions
+from services.api_client import (
+    get_classes,
+    get_chapters,
+    get_subjects,
+    get_question_versions,
+)
 from services.api_client import generate_questions as api_generate_questions
-from services.api_client import download_question_paper as api_download_question_paper
+from services.api_client import (
+    download_question_paper as api_download_question_paper,
+)
+from services.api_client import upload_questions as api_upload_questions
 
 # (key, label) — label is the text shown to the user in the dropdown
 QUESTION_TYPES = [
@@ -19,10 +27,7 @@ ASSESSMENT_CATEGORIES = [
     ("sa", "SA - Summative Assessment"),
 ]
 
-ASSESSMENT_NUMBERS = [
-    ("1", "1"),
-    ("2", "2"),
-]
+ASSESSMENT_NUMBERS = [("1", "1"), ("2", "2")]
 
 COMPLEXITY_LEVELS = [
     ("basic", "Basic"),
@@ -30,9 +35,7 @@ COMPLEXITY_LEVELS = [
     ("advanced", "Advanced"),
 ]
 
-# Matches the "Version {v}" labels downloads_selector.set_options() builds
-# (see refresh_downloads() below), so a clicked chip can be mapped back to
-# the integer version number the backend needs.
+# Matches the "Version {v}" labels downloads_selector builds
 _VERSION_LABEL_RE = re.compile(r"Version (\d+)")
 
 
@@ -49,22 +52,19 @@ def _write_fallback_if_needed(saved_path: str | None, data: bytes) -> None:
     FilePicker.save_file(src_bytes=...) writes the file natively on mobile/web.
     On desktop, per Flet's docs, save_file() only opens the picker and returns
     the chosen path -- the file itself is not created there, so write it here.
-    Guarded so it never raises: if saved_path isn't a real filesystem path
-    (e.g. a content:// URI on Android) this just no-ops, since the native
-    write already handled it in that case.
     """
     if not saved_path:
         return
     try:
         path = Path(saved_path)
         if path.exists() and path.stat().st_size == len(data):
-            return  # already written correctly by the native save_file() call
+            return
         path.write_bytes(data)
     except OSError:
         pass
 
 
-# Fixed column widths keep the header and every data row aligned as a table.
+# Fixed column widths for table layout
 COL_TYPE_WIDTH = 260
 COL_COUNT_WIDTH = 120
 COL_MARKS_WIDTH = 140
@@ -209,7 +209,7 @@ class QuestionRow:
 
 
 def generate_questions_view(page: ft.Page):
-    """Return the Generate Questions screen matching the Scan E-Books layout/style."""
+    """Return the Generate Questions screen with tabs for Generate and Upload."""
 
     def go_back(e):
         page.appbar = None
@@ -218,147 +218,146 @@ def generate_questions_view(page: ft.Page):
     def show_snack(msg: str, color=ft.Colors.RED_600):
         page.show_dialog(ft.SnackBar(content=ft.Text(msg), bgcolor=color))
 
-    # ── Cascading selectors (Class / Subject / Chapter) ─────────────────
-    class SelectorState:
-        def __init__(self, label, on_change=None):
-            self.label = label
-            self.options: list[str] = []
-            self.value = None
-            self._on_change = on_change
-            self.chips = ft.Row(spacing=6, wrap=True, scroll=ft.ScrollMode.HIDDEN, expand=True)
-            self.empty_message = ft.Text("", size=12, color=ft.Colors.GREY_500, italic=True, visible=False)
-            self.field = ft.Container(
-                content=ft.Column(
-                    controls=[
-                        ft.Row(controls=[ft.Text(label, size=12, weight=ft.FontWeight.BOLD)], height=18),
-                        self.chips,
-                        self.empty_message,
-                    ],
-                    spacing=4,
-                ),
-                border=ft.Border.all(1, ft.Colors.GREY_700),
-                border_radius=6,
-                padding=ft.Padding(left=8, top=5, right=8, bottom=6),
-            )
+    # ────────────────────────────────────────────────────────────────────
+    # DROPDOWN SELECTORS (Class, Subject, Assessment Category, Number, Complexity)
+    # ────────────────────────────────────────────────────────────────────
 
-        def set_options(self, options: list[str], empty_text: str = ""):
-            self.options = options
-            self.value = None
-            self.empty_message.value = empty_text
-            self.empty_message.visible = not options and bool(empty_text)
-            self.refresh()
+    class_dropdown = ft.Dropdown(
+        hint_text="Select Class",
+        label="Class",
+        dense=True,
+        expand=True,
+        on_change=lambda e: page.run_task(on_class_selected),
+    )
 
-        def select(self, option):
-            self.value = option
-            self.refresh()
-            if self._on_change:
-                page.run_task(self._on_change)
+    subject_dropdown = ft.Dropdown(
+        hint_text="Select Subject",
+        label="Subject",
+        dense=True,
+        expand=True,
+        on_change=lambda e: page.run_task(on_subject_selected),
+    )
 
-        def refresh(self):
-            self.chips.controls = [
-                ft.Container(
-                    content=ft.Text(
-                        option,
-                        size=12,
-                        color=ft.Colors.WHITE if option == self.value else ft.Colors.GREY_900,
-                    ),
-                    bgcolor="#3949AB" if option == self.value else ft.Colors.WHITE,
-                    border=ft.Border.all(1, ft.Colors.GREY_500),
-                    border_radius=14,
-                    padding=ft.Padding(left=10, top=4, right=10, bottom=4),
-                    on_click=lambda e, selected=option: self.select(selected),
-                )
-                for option in self.options
-            ]
+    chapter_multiselect = ft.MultiSelect(
+        hint_text="Select Chapters",
+        label="Chapters",
+        dense=True,
+        expand=True,
+        on_select=lambda e: page.run_task(on_chapters_selected),
+    )
+
+    assessment_category_dropdown = ft.Dropdown(
+        hint_text="Select Assessment",
+        label="Assessment Category",
+        dense=True,
+        expand=True,
+        options=[ft.dropdown.Option(code, label) for code, label in ASSESSMENT_CATEGORIES],
+        on_change=lambda e: page.run_task(on_assessment_selected),
+    )
+
+    assessment_number_dropdown = ft.Dropdown(
+        hint_text="Select Number",
+        label="Assessment Number",
+        dense=True,
+        expand=True,
+        options=[ft.dropdown.Option(num, num) for num, num in ASSESSMENT_NUMBERS],
+        on_change=lambda e: page.run_task(on_assessment_selected),
+    )
+
+    complexity_dropdown = ft.Dropdown(
+        hint_text="Select Complexity",
+        label="Complexity",
+        dense=True,
+        expand=True,
+        options=[ft.dropdown.Option(code, label) for code, label in COMPLEXITY_LEVELS],
+        on_change=lambda e: page.update(),
+    )
+
+    downloads_dropdown = ft.Dropdown(
+        hint_text="Select Version",
+        label="Downloads",
+        dense=True,
+        expand=True,
+        on_change=lambda e: page.run_task(on_download_selected),
+    )
+
+    # ────────────────────────────────────────────────────────────────────
+    # EVENT HANDLERS FOR CASCADING SELECTORS
+    # ────────────────────────────────────────────────────────────────────
 
     async def on_class_selected():
-        subject_selector.set_options([])
-        chapter_selector.set_options([])
-        update_rows_visibility()
-        if class_selector.value:
-            subjects = await asyncio.to_thread(get_subjects, class_selector.value)
-            subject_selector.set_options(
-                subjects, empty_text="No subjects found for this class. Scan e-books first."
-            )
-        await refresh_downloads()
+        subject_dropdown.options = []
+        subject_dropdown.value = None
+        chapter_multiselect.options = []
+        chapter_multiselect.value = None
+        downloads_dropdown.options = []
+        downloads_dropdown.value = None
+        if class_dropdown.value:
+            subjects = await asyncio.to_thread(get_subjects, class_dropdown.value)
+            subject_dropdown.options = [ft.dropdown.Option(s) for s in subjects]
         page.update()
 
     async def on_subject_selected():
-        chapter_selector.set_options([])
-        update_rows_visibility()
-        if class_selector.value and subject_selector.value:
-            chapters = await asyncio.to_thread(get_chapters, class_selector.value, subject_selector.value)
-            chapter_selector.set_options(
-                chapters, empty_text="No chapters found for this subject. Scan e-books first."
+        chapter_multiselect.options = []
+        chapter_multiselect.value = None
+        downloads_dropdown.options = []
+        downloads_dropdown.value = None
+        if class_dropdown.value and subject_dropdown.value:
+            chapters = await asyncio.to_thread(
+                get_chapters, class_dropdown.value, subject_dropdown.value
             )
-        await refresh_downloads()
+            chapter_multiselect.options = [ft.dropdown.Option(ch) for ch in chapters]
         page.update()
 
-    async def on_chapter_selected():
-        update_rows_visibility()
+    async def on_chapters_selected():
+        downloads_dropdown.options = []
+        downloads_dropdown.value = None
         await refresh_downloads()
         page.update()
-
-    class_selector = SelectorState("Class", on_change=on_class_selected)
-    subject_selector = SelectorState("Subject", on_change=on_subject_selected)
-    chapter_selector = SelectorState("Chapter", on_change=on_chapter_selected)
 
     async def on_assessment_selected():
-        update_rows_visibility()
+        downloads_dropdown.options = []
+        downloads_dropdown.value = None
         await refresh_downloads()
         page.update()
 
-    assessment_category_selector = SelectorState("Assessment Category", on_change=on_assessment_selected)
-    assessment_category_selector.set_options([label for _, label in ASSESSMENT_CATEGORIES])
+    # ────────────────────────────────────────────────────────────────────
+    # DOWNLOADS & FILE OPERATIONS
+    # ────────────────────────────────────────────────────────────────────
 
-    assessment_number_selector = SelectorState("Assessment Number", on_change=on_assessment_selected)
-    assessment_number_selector.set_options([label for _, label in ASSESSMENT_NUMBERS])
-
-    # ── Complexity: single, request-wide setting (not repeated per row) ───
-    async def on_complexity_selected():
-        page.update()
-
-    complexity_selector = SelectorState("Complexity", on_change=on_complexity_selected)
-    complexity_selector.set_options([label for _, label in COMPLEXITY_LEVELS])
-
-    # ── Downloads: previously generated versions for the current selection ─
-    # Tapping a version downloads that saved version as a formatted .docx
-    # question paper. This reads straight from MongoDB via the backend's
-    # /generate-questions/document endpoint -- no AI call is involved.
     download_file_picker = ft.FilePicker()
     page.services.append(download_file_picker)
-    _download_in_progress = {"value": False}  # simple mutable guard against double-taps
+    _download_in_progress = {"value": False}
 
     async def on_download_selected():
-        page.update()  # repaint the chip highlight immediately
-
-        version = _parse_version_number(downloads_selector.value)
-        if version is None:
-            return
-        if _download_in_progress["value"]:
+        page.update()
+        version = _parse_version_number(downloads_dropdown.value)
+        if version is None or _download_in_progress["value"]:
             return
 
         _download_in_progress["value"] = True
         show_snack("Preparing document...", color=ft.Colors.BLUE_700)
         try:
-            category_code, number_code = _selected_assessment_codes()
+            chapters_str = ",".join(chapter_multiselect.value) if chapter_multiselect.value else ""
             try:
                 docx_bytes = await asyncio.to_thread(
                     api_download_question_paper,
-                    class_selector.value,
-                    subject_selector.value,
-                    chapter_selector.value,
-                    category_code,
-                    number_code,
+                    class_dropdown.value,
+                    subject_dropdown.value,
+                    chapters_str,
+                    assessment_category_dropdown.value,
+                    int(assessment_number_dropdown.value),
                     version,
                 )
             except Exception as exc:
                 show_snack(f"Download failed: {exc}", color=ft.Colors.RED_600)
                 return
 
-            safe_subject = (subject_selector.value or "subject").replace("/", "-")
-            safe_chapter = (chapter_selector.value or "chapter").replace("/", "-")
-            file_name = f"{category_code.upper()}{number_code} - {safe_subject} - {safe_chapter} - v{version}.docx"
+            chapters_label = "-".join(chapter_multiselect.value) if chapter_multiselect.value else "chapters"
+            safe_subject = (subject_dropdown.value or "subject").replace("/", "-")
+            safe_chapters = chapters_label.replace("/", "-")
+            category_code = assessment_category_dropdown.value or "fa"
+            file_name = f"{category_code.upper()}{assessment_number_dropdown.value} - {safe_subject} - {safe_chapters} - v{version}.docx"
 
             try:
                 saved_path = await download_file_picker.save_file(
@@ -372,65 +371,49 @@ def generate_questions_view(page: ft.Page):
                 show_snack(f"Could not open save dialog: {exc}", color=ft.Colors.RED_600)
                 return
             if saved_path is None:
-                # User cancelled the save dialog -- not an error, no message needed.
                 return
 
-            # save_file(src_bytes=...) writes the file natively on mobile/web;
-            # on desktop it only returns the chosen path (see Flet docs), so
-            # make sure the bytes actually landed there.
             _write_fallback_if_needed(saved_path, docx_bytes)
             show_snack(f"✓ Saved {file_name}", color=ft.Colors.GREEN_700)
         finally:
             _download_in_progress["value"] = False
 
-    downloads_selector = SelectorState("Downloads", on_change=on_download_selected)
-    downloads_selector.field.visible = False
-
-    def _selected_assessment_codes():
-        """Map the assessment category/number chip labels back to API codes."""
-        category_code = next(
-            code for code, label in ASSESSMENT_CATEGORIES if label == assessment_category_selector.value
-        )
-        number_code = int(
-            next(code for code, label in ASSESSMENT_NUMBERS if label == assessment_number_selector.value)
-        )
-        return category_code, number_code
-
     async def refresh_downloads():
         ready = bool(
-            class_selector.value
-            and subject_selector.value
-            and chapter_selector.value
-            and assessment_category_selector.value
-            and assessment_number_selector.value
+            class_dropdown.value
+            and subject_dropdown.value
+            and chapter_multiselect.value
+            and assessment_category_dropdown.value
+            and assessment_number_dropdown.value
         )
-        downloads_selector.field.visible = ready
         if not ready:
-            downloads_selector.set_options([])
+            downloads_dropdown.options = []
+            downloads_dropdown.value = None
             return
 
-        category_code, number_code = _selected_assessment_codes()
+        chapters_str = ",".join(chapter_multiselect.value)
         versions = await asyncio.to_thread(
             get_question_versions,
-            class_selector.value,
-            subject_selector.value,
-            chapter_selector.value,
-            category_code,
-            number_code,
+            class_dropdown.value,
+            subject_dropdown.value,
+            chapters_str,
+            assessment_category_dropdown.value,
+            int(assessment_number_dropdown.value),
         )
-        downloads_selector.set_options(
-            [f"Version {v}" for v in versions],
-            empty_text="No versions generated yet for this selection.",
-        )
+        downloads_dropdown.options = [
+            ft.dropdown.Option(f"Version {v}") for v in versions
+        ]
+        if not versions:
+            downloads_dropdown.options = [
+                ft.dropdown.Option("No versions", disabled=True)
+            ]
 
-    # ── Dynamic question rows ────────────────────────────────────────────
+    # ────────────────────────────────────────────────────────────────────
+    # TAB 1: GENERATE QUESTIONS
+    # ────────────────────────────────────────────────────────────────────
+
     rows: list[QuestionRow] = []
     rows_column = ft.Column(spacing=0, tight=True)
-    ready_message = ft.Text(
-        "Select class, subject, and chapter to configure questions.",
-        color=ft.Colors.GREY_600,
-        size=13,
-    )
     header_row = ft.Container(
         content=ft.Row(
             controls=[
@@ -448,7 +431,6 @@ def generate_questions_view(page: ft.Page):
         bgcolor=ft.Colors.GREY_100,
         border=ft.Border(bottom=ft.BorderSide(1, ft.Colors.GREY_400)),
     )
-    # Single horizontally swipeable strip; ScrollMode.HIDDEN keeps the bar off-screen.
     table = ft.Row(
         controls=[
             ft.Column(
@@ -460,26 +442,6 @@ def generate_questions_view(page: ft.Page):
         scroll=ft.ScrollMode.HIDDEN,
         vertical_alignment=ft.CrossAxisAlignment.START,
     )
-    rows_section = ft.Column(
-        controls=[
-            ft.Text("Question Configuration", size=16, weight=ft.FontWeight.BOLD, color="#1a237e"),
-            complexity_selector.field,
-            table,
-        ],
-        spacing=12,
-        visible=False,
-    )
-
-    def update_rows_visibility():
-        ready = bool(
-            class_selector.value
-            and subject_selector.value
-            and chapter_selector.value
-            and assessment_category_selector.value
-            and assessment_number_selector.value
-        )
-        rows_section.visible = ready
-        ready_message.visible = not ready
 
     def used_types(exclude_row: QuestionRow | None = None) -> set:
         return {row.type_dropdown.value for row in rows if row is not exclude_row and row.type_dropdown.value}
@@ -488,7 +450,7 @@ def generate_questions_view(page: ft.Page):
         for row in rows:
             taken = used_types(exclude_row=row)
             row.type_dropdown.options = [
-                ft.DropdownOption(key=key, text=text, disabled=key in taken) for key, text in QUESTION_TYPES
+                ft.dropdown.Option(key, text, disabled=key in taken) for key, text in QUESTION_TYPES
             ]
 
     def render_rows(update_page: bool = True):
@@ -526,14 +488,14 @@ def generate_questions_view(page: ft.Page):
 
     async def generate_questions_async(e):
         if not (
-            class_selector.value
-            and subject_selector.value
-            and chapter_selector.value
-            and assessment_category_selector.value
-            and assessment_number_selector.value
-            and complexity_selector.value
+            class_dropdown.value
+            and subject_dropdown.value
+            and chapter_multiselect.value
+            and assessment_category_dropdown.value
+            and assessment_number_dropdown.value
+            and complexity_dropdown.value
         ):
-            show_snack("Select class, subject, chapter, assessment, and complexity.")
+            show_snack("Select all required fields: class, subject, chapters, assessment, and complexity.")
             return
         if not rows:
             show_snack("Add at least one question row.")
@@ -545,11 +507,6 @@ def generate_questions_view(page: ft.Page):
                 return
 
         current_user = page.session.store.get("current_user") or "unknown"
-
-        assessment_category_code, assessment_number_code = _selected_assessment_codes()
-        complexity_code = next(
-            code for code, label in COMPLEXITY_LEVELS if label == complexity_selector.value
-        )
 
         generate_button.disabled = True
         generate_button.content = ft.Row(
@@ -574,12 +531,12 @@ def generate_questions_view(page: ft.Page):
 
             result = await asyncio.to_thread(
                 api_generate_questions,
-                class_selector.value,
-                subject_selector.value,
-                chapter_selector.value,
-                assessment_category_code,
-                assessment_number_code,
-                complexity_code,
+                class_dropdown.value,
+                subject_dropdown.value,
+                list(chapter_multiselect.value),
+                assessment_category_dropdown.value,
+                int(assessment_number_dropdown.value),
+                complexity_dropdown.value,
                 question_rows,
                 current_user,
             )
@@ -594,7 +551,7 @@ def generate_questions_view(page: ft.Page):
                 )
                 await refresh_downloads()
                 if version:
-                    downloads_selector.select(f"Version {version}")
+                    downloads_dropdown.value = f"Version {version}"
             else:
                 error_msg = result.get("error", "Unknown error occurred.")
                 show_snack(f"Generation failed: {error_msg}", color=ft.Colors.RED_600)
@@ -613,6 +570,233 @@ def generate_questions_view(page: ft.Page):
 
     add_row()
 
+    generate_button = ft.ElevatedButton(
+        content=ft.Text("GENERATE QUESTIONS", weight=ft.FontWeight.BOLD),
+        color=ft.Colors.WHITE,
+        bgcolor="#3949AB",
+        height=46,
+        expand=True,
+        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=23)),
+        on_click=generate_questions,
+    )
+
+    generate_tab_content = ft.Column(
+        scroll=ft.ScrollMode.HIDDEN,
+        expand=True,
+        horizontal_alignment=ft.CrossAxisAlignment.STRETCH,
+        spacing=12,
+        controls=[
+            ft.Text("Question Configuration", size=16, weight=ft.FontWeight.BOLD, color="#1a237e"),
+            table,
+            ft.Container(
+                content=generate_button,
+                padding=ft.Padding(left=0, top=10, right=0, bottom=0),
+            ),
+        ],
+    )
+
+    # ────────────────────────────────────────────────────────────────────
+    # TAB 2: UPLOAD QUESTIONS
+    # ────────────────────────────────────────────────────────────────────
+
+    upload_file_picker = ft.FilePicker()
+    page.services.append(upload_file_picker)
+    selected_files = ft.Text("No images selected", color=ft.Colors.GREY_600, size=12)
+    selected_image_files = []
+
+    async def choose_images(e):
+        nonlocal selected_image_files
+        files = await upload_file_picker.pick_files(
+            allow_multiple=True,
+            file_type=ft.FilePickerFileType.IMAGE,
+            with_data=True,
+        )
+        selected_image_files = files
+        if files:
+            selected_files.value = f"{len(files)} image(s) selected: " + ", ".join(
+                file.name for file in files
+            )
+        else:
+            selected_files.value = "No images selected"
+        page.update()
+
+    async def scan_paper_images(e):
+        nonlocal selected_image_files
+        if not selected_image_files:
+            show_snack("Attach at least one image.", color=ft.Colors.RED_600)
+            return
+
+        show_snack("Scanning question paper...", color=ft.Colors.BLUE_700)
+        try:
+            # Import the OCR function to extract text from images
+            from services.api_client import scan_images
+            content = await asyncio.to_thread(scan_images, selected_image_files)
+            upload_content_field.value = content
+            page.update()
+        except Exception as exc:
+            show_snack(f"Scan failed: {exc}", color=ft.Colors.RED_600)
+
+    async def submit_uploaded_questions(e):
+        if not (
+            class_dropdown.value
+            and subject_dropdown.value
+            and chapter_multiselect.value
+            and assessment_category_dropdown.value
+            and assessment_number_dropdown.value
+            and complexity_dropdown.value
+        ):
+            show_snack("Select all required fields.", color=ft.Colors.RED_600)
+            return
+
+        content = (upload_content_field.value or "").strip()
+        if not content:
+            show_snack("Add question paper content before submitting.", color=ft.Colors.RED_600)
+            return
+
+        current_user = page.session.store.get("current_user") or "unknown"
+
+        upload_button.disabled = True
+        upload_button.content = ft.Row(
+            controls=[
+                ft.CircleAvatar(content=ft.ProgressRing(width=16, height=16)),
+                ft.Text("Uploading...", weight=ft.FontWeight.BOLD),
+            ],
+            spacing=8,
+            tight=True,
+        )
+        page.update()
+
+        try:
+            result = await asyncio.to_thread(
+                api_upload_questions,
+                class_dropdown.value,
+                subject_dropdown.value,
+                list(chapter_multiselect.value),
+                assessment_category_dropdown.value,
+                int(assessment_number_dropdown.value),
+                complexity_dropdown.value,
+                current_user,
+                selected_image_files,
+            )
+
+            if result.get("success"):
+                num_questions = len(result.get("questions", []))
+                version = result.get("version")
+                version_note = f" (Version {version})" if version else ""
+                show_snack(
+                    f"✓ Uploaded and extracted {num_questions} questions successfully!{version_note}",
+                    color=ft.Colors.GREEN_700,
+                )
+                upload_content_field.value = ""
+                selected_image_files = []
+                selected_files.value = "No images selected"
+                await refresh_downloads()
+                if version:
+                    downloads_dropdown.value = f"Version {version}"
+            else:
+                error_msg = result.get("error", "Unknown error occurred.")
+                show_snack(f"Upload failed: {error_msg}", color=ft.Colors.RED_600)
+
+        except Exception as exc:
+            show_snack(f"Error: {str(exc)}", color=ft.Colors.RED_600)
+
+        finally:
+            upload_button.disabled = False
+            upload_button.content = ft.Text("SUBMIT", weight=ft.FontWeight.BOLD)
+            page.update()
+
+    def upload_questions_handler(e):
+        page.run_task(submit_uploaded_questions, e)
+
+    upload_content_field = ft.TextField(
+        label="Question Paper Content",
+        multiline=True,
+        expand=True,
+        min_lines=4,
+        max_lines=None,
+        text_size=13,
+        value="",
+    )
+
+    upload_button = ft.ElevatedButton(
+        content=ft.Text("SUBMIT", weight=ft.FontWeight.BOLD),
+        color=ft.Colors.WHITE,
+        bgcolor="#3949AB",
+        height=46,
+        expand=True,
+        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=23)),
+        on_click=upload_questions_handler,
+    )
+
+    upload_tab_content = ft.Column(
+        scroll=ft.ScrollMode.HIDDEN,
+        expand=True,
+        horizontal_alignment=ft.CrossAxisAlignment.STRETCH,
+        spacing=12,
+        controls=[
+            ft.Text("Upload Question Paper", size=16, weight=ft.FontWeight.BOLD, color="#1a237e"),
+            ft.Text(
+                "Upload photos of your question paper to extract and save questions.",
+                color=ft.Colors.GREY_600,
+                size=13,
+            ),
+            ft.Row(
+                controls=[
+                    ft.OutlinedButton(
+                        content=ft.Row(
+                            controls=[
+                                ft.Icon(ft.Icons.ATTACH_FILE, size=16),
+                                ft.Text("Attach Images", size=13),
+                            ],
+                            tight=True,
+                            spacing=6,
+                        ),
+                        on_click=choose_images,
+                        height=36,
+                    ),
+                    ft.ElevatedButton(
+                        content=ft.Text("SCAN", size=13),
+                        on_click=lambda e: page.run_task(scan_paper_images, e),
+                        style=ft.ButtonStyle(
+                            bgcolor={"": "#3949AB"},
+                            color={"": ft.Colors.WHITE},
+                        ),
+                        height=36,
+                    ),
+                ],
+                spacing=12,
+            ),
+            selected_files,
+            upload_content_field,
+            ft.Container(
+                content=upload_button,
+                padding=ft.Padding(left=0, top=10, right=0, bottom=0),
+            ),
+        ],
+    )
+
+    # ────────────────────────────────────────────────────────────────────
+    # MAIN TAB CONTROL
+    # ────────────────────────────────────────────────────────────────────
+
+    tabs = ft.Tabs(
+        selected_index=0,
+        tabs=[
+            ft.Tab(
+                text="Generate Questions",
+                content=generate_tab_content,
+            ),
+            ft.Tab(
+                text="Upload Questions",
+                content=upload_tab_content,
+            ),
+        ],
+    )
+
+    # ────────────────────────────────────────────────────────────────────
+    # MAIN LAYOUT
+    # ────────────────────────────────────────────────────────────────────
+
     page.appbar = ft.AppBar(
         leading=ft.IconButton(
             icon=ft.Icons.ARROW_BACK,
@@ -624,16 +808,6 @@ def generate_questions_view(page: ft.Page):
     )
     page.drawer = None
 
-    generate_button = ft.ElevatedButton(
-        content=ft.Text("GENERATE QUESTIONS", weight=ft.FontWeight.BOLD),
-        color=ft.Colors.WHITE,
-        bgcolor="#3949AB",
-        height=46,
-        expand=True,
-        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=23)),
-        on_click=generate_questions,
-    )
-
     form_layout = ft.Column(
         scroll=ft.ScrollMode.HIDDEN,
         expand=True,
@@ -642,34 +816,41 @@ def generate_questions_view(page: ft.Page):
         controls=[
             ft.Text("Generate Questions", size=24, weight=ft.FontWeight.BOLD, color="#1a237e"),
             ft.Text(
-                "Choose the class, subject, and chapter to configure the question paper.",
+                "Configure and generate or upload question papers.",
                 color=ft.Colors.GREY_600,
                 size=14,
             ),
-            class_selector.field,
-            subject_selector.field,
-            chapter_selector.field,
-            assessment_category_selector.field,
-            assessment_number_selector.field,
-            downloads_selector.field,
-            ready_message,
-            rows_section,
-            ft.Container(
-                content=generate_button,
-                width=page.width - 40,
-                padding=ft.Padding(left=0, top=10, right=0, bottom=20),
+            # Selector fields row 1
+            ft.Row(
+                controls=[class_dropdown, subject_dropdown],
+                spacing=12,
             ),
+            # Selector fields row 2
+            ft.Row(
+                controls=[chapter_multiselect],
+                spacing=12,
+            ),
+            # Assessment selectors row
+            ft.Row(
+                controls=[assessment_category_dropdown, assessment_number_dropdown],
+                spacing=12,
+            ),
+            # Complexity and Downloads row
+            ft.Row(
+                controls=[complexity_dropdown, downloads_dropdown],
+                spacing=12,
+            ),
+            # Tabs
+            tabs,
         ],
     )
 
-    async def load_classes():
+    async def load_classes_initial():
         classes = await asyncio.to_thread(get_classes)
-        class_selector.set_options(
-            classes, empty_text="No class data found. Scan e-books first to add data."
-        )
+        class_dropdown.options = [ft.dropdown.Option(c) for c in classes]
         page.update()
 
-    page.run_task(load_classes)
+    page.run_task(load_classes_initial)
 
     return ft.Container(
         content=form_layout,

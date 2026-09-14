@@ -139,7 +139,7 @@ def scan_images(image_files) -> str:
 def generate_questions(
     class_name: str,
     subject: str,
-    chapter: str,
+    chapters: list[str],
     assessment_category: str,
     assessment_number: int,
     complexity: str,
@@ -159,7 +159,7 @@ def generate_questions(
             json={
                 "class_name": class_name,
                 "subject": subject,
-                "chapter": chapter,
+                "chapters": chapters,
                 "assessmentCategory": assessment_category,
                 "assessmentNumber": assessment_number,
                 "complexity": complexity,
@@ -174,21 +174,66 @@ def generate_questions(
         return _connection_error(exc)
 
 
+def upload_questions(
+    class_name: str,
+    subject: str,
+    chapters: list[str],
+    assessment_category: str,
+    assessment_number: int,
+    complexity: str,
+    username: str,
+    image_files,
+) -> dict:
+    """
+    Upload a question paper (as images) and extract questions using Claude AI.
+
+    Returns:
+        {'success': True, 'id': '<id>', 'version': <int>, 'questions': [...]}
+        or {'success': False, 'error': '...'}
+    """
+    try:
+        files = [
+            ("images", (image_file.name, image_file.bytes, "application/octet-stream"))
+            for image_file in image_files
+        ]
+        
+        data = {
+            "class_name": class_name,
+            "subject": subject,
+            "chapters": ",".join(chapters),
+            "assessment_category": assessment_category,
+            "assessment_number": str(assessment_number),
+            "complexity": complexity,
+            "username": username,
+        }
+        
+        response = httpx.post(
+            f"{API_BASE_URL}/api/ebooks/upload-questions",
+            data=data,
+            files=files,
+            timeout=httpx.Timeout(120.0),  # Question extraction may take longer
+        )
+        response.raise_for_status()
+        return response.json()
+    except httpx.HTTPError as exc:
+        return _connection_error(exc)
+
+
 def get_question_versions(
     class_name: str,
     subject: str,
-    chapter: str,
+    chapters: str,
     assessment_category: str,
     assessment_number: int,
 ) -> list[int]:
-    """Return every saved version number for this class/subject/chapter/assessment combo."""
+    """Return every saved version number for this class/subject/chapters/assessment combo."""
     try:
         response = httpx.get(
             f"{API_BASE_URL}/api/ebooks/question-versions",
             params={
                 "class_name": class_name,
                 "subject": subject,
-                "chapter": chapter,
+                "chapters": chapters,
                 "assessment_category": assessment_category,
                 "assessment_number": assessment_number,
             },
@@ -203,19 +248,16 @@ def get_question_versions(
 def download_question_paper(
     class_name: str,
     subject: str,
-    chapter: str,
+    chapters: str,
     assessment_category: str,
     assessment_number: int,
     version: int,
 ) -> bytes:
     """
-    Download a previously-generated, saved version of a question paper as a
-    formatted .docx file. This reads straight from the saved MongoDB data on
-    the backend -- no AI/Claude call is made for this request.
+    Download a previously-generated or uploaded, saved version of a question paper as a
+    formatted .docx file.
 
-    Returns the raw .docx bytes on success. Raises RuntimeError on failure
-    (network error, or the backend returning an error status such as a 404
-    for a version that no longer exists).
+    Returns the raw .docx bytes on success. Raises RuntimeError on failure.
     """
     try:
         response = httpx.get(
@@ -223,7 +265,7 @@ def download_question_paper(
             params={
                 "class_name": class_name,
                 "subject": subject,
-                "chapter": chapter,
+                "chapters": chapters,
                 "assessment_category": assessment_category,
                 "assessment_number": assessment_number,
                 "version": version,

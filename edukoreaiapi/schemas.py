@@ -33,7 +33,7 @@ class QuestionRowConfig(BaseModel):
 class GenerateQuestionsRequest(BaseModel):
     class_name: str
     subject: str
-    chapter: str
+    chapters: list[str]  # Changed from single chapter to list of chapters
     assessmentCategory: str  # "fa" or "sa"
     assessmentNumber: int    # 1 or 2
     complexity: Literal["basic", "intermediate", "advanced"]

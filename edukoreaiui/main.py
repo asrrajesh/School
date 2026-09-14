@@ -1,4 +1,5 @@
 import flet as ft
+
 from screens.login_screen import login_view
 from screens.signup_screen import signup_view
 from screens.forgot_password_screen import forgot_password_view

@@ -12,7 +12,7 @@ from database.db import (
     save_generated_questions,
     get_generated_questions,
     get_question_versions,
-    save_uploaded_questions,
+    #save_uploaded_questions,
 )
 from services.claude_ocr import extract_text_from_images
 from services.claude_questions import generate_questions_from_chapter, extract_questions_from_paper

@@ -219,6 +219,47 @@ def upload_questions(
         return _connection_error(exc)
 
 
+def save_uploaded_questions(
+    class_name: str,
+    subject: str,
+    chapters: list[str],
+    assessment_category: str,
+    assessment_number: int,
+    complexity: str,
+    paper_content: str,
+    question_rows: list[dict],
+    username: str,
+) -> dict:
+    """
+    Convert already-scanned question paper text into structured questions
+    (via Claude AI) mapped to the selected configuration, and save them.
+
+    Returns:
+        {'success': True, 'id': '<id>', 'version': <int>, 'questions': [...]}
+        or {'success': False, 'error': '...'}
+    """
+    try:
+        response = httpx.post(
+            f"{API_BASE_URL}/api/ebooks/save-uploaded-questions",
+            json={
+                "class_name": class_name,
+                "subject": subject,
+                "chapters": chapters,
+                "assessmentCategory": assessment_category,
+                "assessmentNumber": assessment_number,
+                "complexity": complexity,
+                "paperContent": paper_content,
+                "questionRows": question_rows,
+                "username": username,
+            },
+            timeout=httpx.Timeout(120.0),
+        )
+        response.raise_for_status()
+        return response.json()
+    except httpx.HTTPError as exc:
+        return _connection_error(exc)
+
+
 def get_question_versions(
     class_name: str,
     subject: str,

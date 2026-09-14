@@ -17,7 +17,7 @@ from database.db import (
 from services.claude_ocr import extract_text_from_images
 from services.claude_questions import generate_questions_from_chapter, extract_questions_from_paper
 from services.paper_generator import generate_question_paper_docx
-from schemas import SaveChapterRequest, GenerateQuestionsRequest
+from schemas import SaveChapterRequest, GenerateQuestionsRequest, SaveUploadedQuestionsRequest
 
 router = APIRouter(prefix="/api/ebooks", tags=["ebooks"])
 
@@ -208,6 +208,55 @@ async def upload_questions(
             extracted_questions,
             [],  # No configuration for uploaded questions
             username,
+            source="uploaded",
+            source_content=paper_text,
+        )
+
+        if not db_result.get("success"):
+            return db_result
+
+        return {
+            "success": True,
+            "id": db_result["id"],
+            "version": db_result["version"],
+            "questions": extracted_questions,
+            "message": f"Uploaded and extracted {len(extracted_questions)} questions successfully (Version {db_result['version']}).",
+        }
+
+    except Exception as exc:
+        return {"success": False, "error": str(exc)}
+
+
+@router.post("/save-uploaded-questions")
+def save_uploaded_questions(payload: SaveUploadedQuestionsRequest):
+    """
+    Convert an already-scanned question paper's text into structured questions
+    using Claude AI, mapped to the user-selected class/subject/chapters/assessment
+    configuration, and save them to MongoDB with source='uploaded'.
+    """
+    try:
+        paper_text = payload.paperContent.strip()
+        if not paper_text:
+            return {"success": False, "error": "Question paper content is empty."}
+
+        extracted_questions = extract_questions_from_paper(paper_text, payload.complexity)
+
+        if not extracted_questions:
+            return {
+                "success": False,
+                "error": "Could not extract questions from the paper content.",
+            }
+
+        db_result = save_generated_questions(
+            payload.class_name,
+            payload.subject,
+            payload.chapters,
+            payload.assessmentCategory,
+            payload.assessmentNumber,
+            payload.complexity,
+            extracted_questions,
+            [row.model_dump() for row in payload.questionRows],
+            payload.username,
             source="uploaded",
             source_content=paper_text,
         )

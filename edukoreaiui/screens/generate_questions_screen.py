@@ -13,13 +13,18 @@ from services.api_client import generate_questions as api_generate_questions
 from services.api_client import (
     download_question_paper as api_download_question_paper,
 )
-from services.api_client import upload_questions as api_upload_questions
+from services.api_client import save_uploaded_questions as api_save_uploaded_questions
 
 # (key, label) — label is the text shown to the user in the dropdown
 QUESTION_TYPES = [
     ("mcq", "Choose the correct answer"),
+    ("fib", "Fill in the blanks with a suitable correct answer"),
+    ("mtf", "Match the following"),
+    ("sa", "Answer the following in one sentence"),
+    ("tf", "Answer the following statements are True or False"),
     ("short", "Answer the following questions (Short)"),
     ("long", "Answer the following questions (Long)"),
+    ("diagram", "Draw a neat labeled diagram of the following"),
 ]
 
 ASSESSMENT_CATEGORIES = [
@@ -64,42 +69,184 @@ def _write_fallback_if_needed(saved_path: str | None, data: bytes) -> None:
         pass
 
 
-# Fixed column widths for table layout
-COL_TYPE_WIDTH = 260
-COL_COUNT_WIDTH = 120
-COL_MARKS_WIDTH = 140
-COL_TOTAL_WIDTH = 80
-COL_ACTION_WIDTH = 90
-CELL_SPACING = 8
-ROW_HEIGHT = 52
+class MultiSelect(ft.Container):
+    """Custom multi-select chip control for selecting multiple options (e.g. chapters)."""
 
+    def __init__(
+        self,
+        label: str = "Select",
+        hint_text: str = "Select Options",
+        options=None,
+        on_select=None,
+        dense: bool = True,
+        expand: bool = True,
+        **kwargs,
+    ):
+        super().__init__(expand=expand)
+        self.label_text = label
+        self.hint_text = hint_text
+        self.on_select = on_select
+        self._raw_options = []
+        self._selected: set[str] = set()
 
-def _cell(control, width):
-    """Fixed-width table cell wrapper."""
-    return ft.Container(
-        content=control,
-        width=width,
-        height=ROW_HEIGHT,
-        alignment=ft.Alignment.CENTER,
-        padding=ft.Padding(left=4, top=0, right=4, bottom=0),
-    )
-
-
-def _header_cell(label, width):
-    return ft.Container(
-        content=ft.Text(
-            label,
+        self.chips_row = ft.Row(
+            spacing=6,
+            scroll=ft.ScrollMode.AUTO,
+            expand=True,
+        )
+        self.label_control = ft.Text(
+            self.label_text,
             size=12,
             weight=ft.FontWeight.BOLD,
-            color=ft.Colors.GREY_700,
-            text_align=ft.TextAlign.CENTER,
-            max_lines=2,
-        ),
-        width=width,
-        height=42,
-        alignment=ft.Alignment.CENTER,
-        padding=ft.Padding(left=4, top=0, right=4, bottom=0),
-    )
+            color=ft.Colors.GREY_800,
+        )
+        self.count_control = ft.Text("", size=11, color=ft.Colors.GREY_600)
+        self.select_all_btn = ft.TextButton(
+            "Select All",
+            style=ft.ButtonStyle(padding=ft.Padding(4, 0, 4, 0)),
+            on_click=self._toggle_select_all,
+            visible=False,
+        )
+
+        self.content = ft.Column(
+            controls=[
+                ft.Row(
+                    controls=[
+                        self.label_control,
+                        self.count_control,
+                        ft.Container(expand=True),
+                        self.select_all_btn,
+                    ],
+                    alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
+                    vertical_alignment=ft.CrossAxisAlignment.CENTER,
+                    height=20,
+                ),
+                self.chips_row,
+            ],
+            spacing=4,
+            tight=True,
+        )
+        self.border = ft.Border.all(1, ft.Colors.GREY_400)
+        self.border_radius = 6
+        self.padding = ft.Padding(left=10, top=6, right=10, bottom=8)
+        self.bgcolor = ft.Colors.WHITE
+
+        if options:
+            self.options = options
+        else:
+            self._render()
+
+    @property
+    def options(self):
+        return self._raw_options
+
+    @options.setter
+    def options(self, opts):
+        self._raw_options = list(opts) if opts else []
+        valid_keys = {self._get_opt_val(opt) for opt in self._raw_options}
+        self._selected = self._selected.intersection(valid_keys)
+        self._render()
+
+    @property
+    def value(self):
+        selected_in_order = [
+            self._get_opt_val(opt)
+            for opt in self._raw_options
+            if self._get_opt_val(opt) in self._selected
+        ]
+        return selected_in_order if selected_in_order else None
+
+    @value.setter
+    def value(self, val):
+        if not val:
+            self._selected.clear()
+        elif isinstance(val, (list, set, tuple)):
+            self._selected = {str(v) for v in val}
+        else:
+            self._selected = {str(val)}
+        self._render()
+
+    def _get_opt_val(self, opt):
+        if hasattr(opt, "key") and opt.key is not None:
+            return str(opt.key)
+        if hasattr(opt, "text") and opt.text is not None:
+            return str(opt.text)
+        return str(opt)
+
+    def _get_opt_text(self, opt):
+        if hasattr(opt, "text") and opt.text is not None:
+            return str(opt.text)
+        if hasattr(opt, "key") and opt.key is not None:
+            return str(opt.key)
+        return str(opt)
+
+    def _toggle_select(self, val):
+        if val in self._selected:
+            self._selected.remove(val)
+        else:
+            self._selected.add(val)
+        self._render()
+        if self.page:
+            self.page.update()
+        if self.on_select:
+            self.on_select(None)
+
+    def _toggle_select_all(self, e):
+        all_vals = [self._get_opt_val(opt) for opt in self._raw_options]
+        if len(self._selected) == len(all_vals) and len(all_vals) > 0:
+            self._selected.clear()
+        else:
+            self._selected = set(all_vals)
+        self._render()
+        if self.page:
+            self.page.update()
+        if self.on_select:
+            self.on_select(None)
+
+    def _render(self):
+        if not self._raw_options:
+            self.chips_row.controls = [
+                ft.Text(
+                    self.hint_text or "No options available",
+                    size=12,
+                    italic=True,
+                    color=ft.Colors.GREY_500,
+                )
+            ]
+            self.count_control.value = ""
+            self.select_all_btn.visible = False
+            return
+
+        all_vals = [self._get_opt_val(opt) for opt in self._raw_options]
+        is_all = len(self._selected) == len(all_vals) and len(all_vals) > 0
+        self.select_all_btn.text = "Deselect All" if is_all else "Select All"
+        self.select_all_btn.visible = len(all_vals) > 1
+        self.count_control.value = (
+            f"({len(self._selected)} selected)" if self._selected else ""
+        )
+
+        chip_controls = []
+        for opt in self._raw_options:
+            val = self._get_opt_val(opt)
+            text = self._get_opt_text(opt)
+            is_sel = val in self._selected
+            chip_controls.append(
+                ft.Container(
+                    content=ft.Text(
+                        text,
+                        size=12,
+                        weight=ft.FontWeight.W_500 if is_sel else ft.FontWeight.NORMAL,
+                        color=ft.Colors.WHITE if is_sel else ft.Colors.GREY_800,
+                    ),
+                    bgcolor="#3949AB" if is_sel else "#F5F5F5",
+                    border=ft.Border.all(1, "#3949AB" if is_sel else ft.Colors.GREY_400),
+                    border_radius=14,
+                    padding=ft.Padding(left=10, top=4, right=10, bottom=4),
+                    on_click=lambda e, v=val: self._toggle_select(v),
+                    ink=True,
+                )
+            )
+        self.chips_row.controls = chip_controls
 
 
 class QuestionRow:
@@ -112,27 +259,28 @@ class QuestionRow:
         self._on_add = on_add
 
         self.type_dropdown = ft.Dropdown(
+            label="Question Type",
             options=[],
             hint_text="Select type",
             text_size=13,
             dense=True,
-            expand=True,
+            col={"xs": 12, "sm": 6, "md": 4},
             on_select=lambda e: self._on_type_change(),
         )
         self.count_field = ft.TextField(
+            label="Question Count",
             text_size=13,
             dense=True,
-            text_align=ft.TextAlign.CENTER,
-            expand=True,
             keyboard_type=ft.KeyboardType.NUMBER,
+            col={"xs": 6, "sm": 3, "md": 2},
             on_change=lambda e: self._on_recalc(),
         )
         self.marks_field = ft.TextField(
+            label="Marks Per Question",
             text_size=13,
             dense=True,
-            text_align=ft.TextAlign.CENTER,
-            expand=True,
             keyboard_type=ft.KeyboardType.NUMBER,
+            col={"xs": 6, "sm": 3, "md": 2},
             on_change=lambda e: self._on_recalc(),
         )
         self.total_text = ft.Text("0", size=15, weight=ft.FontWeight.BOLD, color="#1a237e")
@@ -149,21 +297,36 @@ class QuestionRow:
             on_click=lambda e: self._on_remove(self),
         )
 
+        total_block = ft.Column(
+            controls=[
+                ft.Text("Total Marks", size=11, color=ft.Colors.GREY_600),
+                self.total_text,
+            ],
+            spacing=2,
+            tight=True,
+            col={"xs": 6, "sm": 3, "md": 2},
+        )
+        actions_block = ft.Row(
+            controls=[self.add_button, self.delete_button],
+            spacing=0,
+            tight=True,
+            col={"xs": 12, "sm": 3, "md": 2},
+        )
+
         self.row_control = ft.Container(
-            content=ft.Row(
+            content=ft.ResponsiveRow(
                 controls=[
-                    _cell(self.type_dropdown, COL_TYPE_WIDTH),
-                    _cell(self.count_field, COL_COUNT_WIDTH),
-                    _cell(self.marks_field, COL_MARKS_WIDTH),
-                    _cell(self.total_text, COL_TOTAL_WIDTH),
-                    _cell(self.add_button, COL_ACTION_WIDTH),
-                    _cell(self.delete_button, COL_ACTION_WIDTH),
+                    self.type_dropdown,
+                    self.count_field,
+                    self.marks_field,
+                    total_block,
+                    actions_block,
                 ],
-                spacing=CELL_SPACING,
+                spacing=8,
+                run_spacing=8,
                 vertical_alignment=ft.CrossAxisAlignment.CENTER,
-                wrap=False,
-                tight=True,
             ),
+            padding=ft.Padding(left=4, top=10, right=4, bottom=10),
             border=ft.Border(bottom=ft.BorderSide(1, ft.Colors.GREY_300)),
         )
 
@@ -209,7 +372,7 @@ class QuestionRow:
 
 
 def generate_questions_view(page: ft.Page):
-    """Return the Generate Questions screen with tabs for Generate and Upload."""
+    """Return the Generate Questions screen with an inline upload toggle."""
 
     def go_back(e):
         page.appbar = None
@@ -227,7 +390,7 @@ def generate_questions_view(page: ft.Page):
         label="Class",
         dense=True,
         expand=True,
-        on_change=lambda e: page.run_task(on_class_selected),
+        on_select=lambda e: page.run_task(on_class_selected),
     )
 
     subject_dropdown = ft.Dropdown(
@@ -235,10 +398,10 @@ def generate_questions_view(page: ft.Page):
         label="Subject",
         dense=True,
         expand=True,
-        on_change=lambda e: page.run_task(on_subject_selected),
+        on_select=lambda e: page.run_task(on_subject_selected),
     )
 
-    chapter_multiselect = ft.MultiSelect(
+    chapter_multiselect = MultiSelect(
         hint_text="Select Chapters",
         label="Chapters",
         dense=True,
@@ -252,7 +415,7 @@ def generate_questions_view(page: ft.Page):
         dense=True,
         expand=True,
         options=[ft.dropdown.Option(code, label) for code, label in ASSESSMENT_CATEGORIES],
-        on_change=lambda e: page.run_task(on_assessment_selected),
+        on_select=lambda e: page.run_task(on_assessment_selected),
     )
 
     assessment_number_dropdown = ft.Dropdown(
@@ -261,7 +424,7 @@ def generate_questions_view(page: ft.Page):
         dense=True,
         expand=True,
         options=[ft.dropdown.Option(num, num) for num, num in ASSESSMENT_NUMBERS],
-        on_change=lambda e: page.run_task(on_assessment_selected),
+        on_select=lambda e: page.run_task(on_assessment_selected),
     )
 
     complexity_dropdown = ft.Dropdown(
@@ -270,7 +433,7 @@ def generate_questions_view(page: ft.Page):
         dense=True,
         expand=True,
         options=[ft.dropdown.Option(code, label) for code, label in COMPLEXITY_LEVELS],
-        on_change=lambda e: page.update(),
+        on_select=lambda e: page.update(),
     )
 
     downloads_dropdown = ft.Dropdown(
@@ -278,7 +441,7 @@ def generate_questions_view(page: ft.Page):
         label="Downloads",
         dense=True,
         expand=True,
-        on_change=lambda e: page.run_task(on_download_selected),
+        on_select=lambda e: page.run_task(on_download_selected),
     )
 
     # ────────────────────────────────────────────────────────────────────
@@ -409,39 +572,11 @@ def generate_questions_view(page: ft.Page):
             ]
 
     # ────────────────────────────────────────────────────────────────────
-    # TAB 1: GENERATE QUESTIONS
+    # QUESTION CONFIGURATION (required for both generating and uploading)
     # ────────────────────────────────────────────────────────────────────
 
     rows: list[QuestionRow] = []
     rows_column = ft.Column(spacing=0, tight=True)
-    header_row = ft.Container(
-        content=ft.Row(
-            controls=[
-                _header_cell("Question Type", COL_TYPE_WIDTH),
-                _header_cell("Question Count", COL_COUNT_WIDTH),
-                _header_cell("Marks Per Question", COL_MARKS_WIDTH),
-                _header_cell("Total", COL_TOTAL_WIDTH),
-                _header_cell("Add", COL_ACTION_WIDTH),
-                _header_cell("Delete", COL_ACTION_WIDTH),
-            ],
-            spacing=CELL_SPACING,
-            wrap=False,
-            tight=True,
-        ),
-        bgcolor=ft.Colors.GREY_100,
-        border=ft.Border(bottom=ft.BorderSide(1, ft.Colors.GREY_400)),
-    )
-    table = ft.Row(
-        controls=[
-            ft.Column(
-                controls=[header_row, rows_column],
-                spacing=0,
-                tight=True,
-            )
-        ],
-        scroll=ft.ScrollMode.HIDDEN,
-        vertical_alignment=ft.CrossAxisAlignment.START,
-    )
 
     def used_types(exclude_row: QuestionRow | None = None) -> set:
         return {row.type_dropdown.value for row in rows if row is not exclude_row and row.type_dropdown.value}
@@ -486,117 +621,23 @@ def generate_questions_view(page: ft.Page):
         rows.remove(row)
         render_rows()
 
-    async def generate_questions_async(e):
-        if not (
-            class_dropdown.value
-            and subject_dropdown.value
-            and chapter_multiselect.value
-            and assessment_category_dropdown.value
-            and assessment_number_dropdown.value
-            and complexity_dropdown.value
-        ):
-            show_snack("Select all required fields: class, subject, chapters, assessment, and complexity.")
-            return
-        if not rows:
-            show_snack("Add at least one question row.")
-            return
-        for row in rows:
-            error = row.validate()
-            if error:
-                show_snack(error)
-                return
-
-        current_user = page.session.store.get("current_user") or "unknown"
-
-        generate_button.disabled = True
-        generate_button.content = ft.Row(
-            controls=[
-                ft.CircleAvatar(content=ft.ProgressRing(width=16, height=16)),
-                ft.Text("Generating...", weight=ft.FontWeight.BOLD),
-            ],
-            spacing=8,
-            tight=True,
-        )
-        page.update()
-
-        try:
-            question_rows = [
-                {
-                    "questionType": row.type_dropdown.value,
-                    "questionCount": int(row.count_field.value),
-                    "marksPerQuestion": float(row.marks_field.value),
-                }
-                for row in rows
-            ]
-
-            result = await asyncio.to_thread(
-                api_generate_questions,
-                class_dropdown.value,
-                subject_dropdown.value,
-                list(chapter_multiselect.value),
-                assessment_category_dropdown.value,
-                int(assessment_number_dropdown.value),
-                complexity_dropdown.value,
-                question_rows,
-                current_user,
-            )
-
-            if result.get("success"):
-                num_questions = len(result.get("questions", []))
-                version = result.get("version")
-                version_note = f" (Version {version})" if version else ""
-                show_snack(
-                    f"✓ Generated {num_questions} questions successfully!{version_note}",
-                    color=ft.Colors.GREEN_700,
-                )
-                await refresh_downloads()
-                if version:
-                    downloads_dropdown.value = f"Version {version}"
-            else:
-                error_msg = result.get("error", "Unknown error occurred.")
-                show_snack(f"Generation failed: {error_msg}", color=ft.Colors.RED_600)
-
-        except Exception as exc:
-            show_snack(f"Error: {str(exc)}", color=ft.Colors.RED_600)
-
-        finally:
-            generate_button.disabled = False
-            generate_button.content = ft.Text("GENERATE QUESTIONS", weight=ft.FontWeight.BOLD)
-            page.update()
-
-    def generate_questions(e):
-        """Wrapper to run async function."""
-        page.run_task(generate_questions_async, e)
-
     add_row()
 
-    generate_button = ft.ElevatedButton(
-        content=ft.Text("GENERATE QUESTIONS", weight=ft.FontWeight.BOLD),
-        color=ft.Colors.WHITE,
-        bgcolor="#3949AB",
-        height=46,
-        expand=True,
-        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=23)),
-        on_click=generate_questions,
-    )
-
-    generate_tab_content = ft.Column(
-        scroll=ft.ScrollMode.HIDDEN,
-        expand=True,
-        horizontal_alignment=ft.CrossAxisAlignment.STRETCH,
+    question_config_section = ft.Column(
         spacing=12,
         controls=[
             ft.Text("Question Configuration", size=16, weight=ft.FontWeight.BOLD, color="#1a237e"),
-            table,
-            ft.Container(
-                content=generate_button,
-                padding=ft.Padding(left=0, top=10, right=0, bottom=0),
+            ft.Text(
+                "Required for both generating and uploading question papers.",
+                color=ft.Colors.GREY_600,
+                size=13,
             ),
+            rows_column,
         ],
     )
 
     # ────────────────────────────────────────────────────────────────────
-    # TAB 2: UPLOAD QUESTIONS
+    # UPLOAD QUESTION PAPER (revealed when "Upload Question Paper" is checked)
     # ────────────────────────────────────────────────────────────────────
 
     upload_file_picker = ft.FilePicker()
@@ -636,78 +677,6 @@ def generate_questions_view(page: ft.Page):
         except Exception as exc:
             show_snack(f"Scan failed: {exc}", color=ft.Colors.RED_600)
 
-    async def submit_uploaded_questions(e):
-        if not (
-            class_dropdown.value
-            and subject_dropdown.value
-            and chapter_multiselect.value
-            and assessment_category_dropdown.value
-            and assessment_number_dropdown.value
-            and complexity_dropdown.value
-        ):
-            show_snack("Select all required fields.", color=ft.Colors.RED_600)
-            return
-
-        content = (upload_content_field.value or "").strip()
-        if not content:
-            show_snack("Add question paper content before submitting.", color=ft.Colors.RED_600)
-            return
-
-        current_user = page.session.store.get("current_user") or "unknown"
-
-        upload_button.disabled = True
-        upload_button.content = ft.Row(
-            controls=[
-                ft.CircleAvatar(content=ft.ProgressRing(width=16, height=16)),
-                ft.Text("Uploading...", weight=ft.FontWeight.BOLD),
-            ],
-            spacing=8,
-            tight=True,
-        )
-        page.update()
-
-        try:
-            result = await asyncio.to_thread(
-                api_upload_questions,
-                class_dropdown.value,
-                subject_dropdown.value,
-                list(chapter_multiselect.value),
-                assessment_category_dropdown.value,
-                int(assessment_number_dropdown.value),
-                complexity_dropdown.value,
-                current_user,
-                selected_image_files,
-            )
-
-            if result.get("success"):
-                num_questions = len(result.get("questions", []))
-                version = result.get("version")
-                version_note = f" (Version {version})" if version else ""
-                show_snack(
-                    f"✓ Uploaded and extracted {num_questions} questions successfully!{version_note}",
-                    color=ft.Colors.GREEN_700,
-                )
-                upload_content_field.value = ""
-                selected_image_files = []
-                selected_files.value = "No images selected"
-                await refresh_downloads()
-                if version:
-                    downloads_dropdown.value = f"Version {version}"
-            else:
-                error_msg = result.get("error", "Unknown error occurred.")
-                show_snack(f"Upload failed: {error_msg}", color=ft.Colors.RED_600)
-
-        except Exception as exc:
-            show_snack(f"Error: {str(exc)}", color=ft.Colors.RED_600)
-
-        finally:
-            upload_button.disabled = False
-            upload_button.content = ft.Text("SUBMIT", weight=ft.FontWeight.BOLD)
-            page.update()
-
-    def upload_questions_handler(e):
-        page.run_task(submit_uploaded_questions, e)
-
     upload_content_field = ft.TextField(
         label="Question Paper Content",
         multiline=True,
@@ -718,25 +687,14 @@ def generate_questions_view(page: ft.Page):
         value="",
     )
 
-    upload_button = ft.ElevatedButton(
-        content=ft.Text("SUBMIT", weight=ft.FontWeight.BOLD),
-        color=ft.Colors.WHITE,
-        bgcolor="#3949AB",
-        height=46,
-        expand=True,
-        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=23)),
-        on_click=upload_questions_handler,
-    )
-
-    upload_tab_content = ft.Column(
-        scroll=ft.ScrollMode.HIDDEN,
-        expand=True,
-        horizontal_alignment=ft.CrossAxisAlignment.STRETCH,
+    upload_section = ft.Column(
         spacing=12,
+        visible=False,
         controls=[
             ft.Text("Upload Question Paper", size=16, weight=ft.FontWeight.BOLD, color="#1a237e"),
             ft.Text(
-                "Upload photos of your question paper to extract and save questions.",
+                "Attach and scan photos of your question paper, then click "
+                "Generate Questions below to map them to your selections and save.",
                 color=ft.Colors.GREY_600,
                 size=13,
             ),
@@ -768,29 +726,147 @@ def generate_questions_view(page: ft.Page):
             ),
             selected_files,
             upload_content_field,
-            ft.Container(
-                content=upload_button,
-                padding=ft.Padding(left=0, top=10, right=0, bottom=0),
-            ),
         ],
     )
 
     # ────────────────────────────────────────────────────────────────────
-    # MAIN TAB CONTROL
+    # UPLOAD MODE TOGGLE
     # ────────────────────────────────────────────────────────────────────
 
-    tabs = ft.Tabs(
-        selected_index=0,
-        tabs=[
-            ft.Tab(
-                text="Generate Questions",
-                content=generate_tab_content,
-            ),
-            ft.Tab(
-                text="Upload Questions",
-                content=upload_tab_content,
-            ),
-        ],
+    def toggle_upload_mode(e):
+        upload_section.visible = upload_checkbox.value
+        page.update()
+
+    upload_checkbox = ft.Checkbox(
+        label="Upload Question Paper (scan images instead of generating with AI)",
+        value=False,
+        on_change=toggle_upload_mode,
+    )
+
+    # ────────────────────────────────────────────────────────────────────
+    # GENERATE QUESTIONS (single button, branches by upload_checkbox)
+    # ────────────────────────────────────────────────────────────────────
+
+    async def generate_questions_async(e):
+        nonlocal selected_image_files
+        if not (
+            class_dropdown.value
+            and subject_dropdown.value
+            and chapter_multiselect.value
+            and assessment_category_dropdown.value
+            and assessment_number_dropdown.value
+            and complexity_dropdown.value
+        ):
+            show_snack("Select all required fields: class, subject, chapters, assessment, and complexity.")
+            return
+
+        is_upload = upload_checkbox.value
+
+        if is_upload:
+            content = (upload_content_field.value or "").strip()
+            if not content:
+                show_snack("Scan or paste the question paper content before generating.", color=ft.Colors.RED_600)
+                return
+
+        if not rows:
+            show_snack("Add at least one question row.")
+            return
+        for row in rows:
+            error = row.validate()
+            if error:
+                show_snack(error)
+                return
+
+        current_user = page.session.store.get("current_user") or "unknown"
+
+        generate_button.disabled = True
+        generate_button.content = ft.Row(
+            controls=[
+                ft.CircleAvatar(content=ft.ProgressRing(width=16, height=16)),
+                ft.Text("Processing...", weight=ft.FontWeight.BOLD),
+            ],
+            spacing=8,
+            tight=True,
+        )
+        page.update()
+
+        try:
+            question_rows = [
+                {
+                    "questionType": row.type_dropdown.value,
+                    "questionCount": int(row.count_field.value),
+                    "marksPerQuestion": float(row.marks_field.value),
+                }
+                for row in rows
+            ]
+
+            if is_upload:
+                result = await asyncio.to_thread(
+                    api_save_uploaded_questions,
+                    class_dropdown.value,
+                    subject_dropdown.value,
+                    list(chapter_multiselect.value),
+                    assessment_category_dropdown.value,
+                    int(assessment_number_dropdown.value),
+                    complexity_dropdown.value,
+                    upload_content_field.value.strip(),
+                    question_rows,
+                    current_user,
+                )
+                success_verb = "Uploaded and extracted"
+            else:
+                result = await asyncio.to_thread(
+                    api_generate_questions,
+                    class_dropdown.value,
+                    subject_dropdown.value,
+                    list(chapter_multiselect.value),
+                    assessment_category_dropdown.value,
+                    int(assessment_number_dropdown.value),
+                    complexity_dropdown.value,
+                    question_rows,
+                    current_user,
+                )
+                success_verb = "Generated"
+
+            if result.get("success"):
+                num_questions = len(result.get("questions", []))
+                version = result.get("version")
+                version_note = f" (Version {version})" if version else ""
+                show_snack(
+                    f"✓ {success_verb} {num_questions} questions successfully!{version_note}",
+                    color=ft.Colors.GREEN_700,
+                )
+                if is_upload:
+                    upload_content_field.value = ""
+                    selected_image_files = []
+                    selected_files.value = "No images selected"
+                await refresh_downloads()
+                if version:
+                    downloads_dropdown.value = f"Version {version}"
+            else:
+                error_msg = result.get("error", "Unknown error occurred.")
+                show_snack(f"{'Upload' if is_upload else 'Generation'} failed: {error_msg}", color=ft.Colors.RED_600)
+
+        except Exception as exc:
+            show_snack(f"Error: {str(exc)}", color=ft.Colors.RED_600)
+
+        finally:
+            generate_button.disabled = False
+            generate_button.content = ft.Text("GENERATE QUESTIONS", weight=ft.FontWeight.BOLD)
+            page.update()
+
+    def generate_questions(e):
+        """Wrapper to run async function."""
+        page.run_task(generate_questions_async, e)
+
+    generate_button = ft.ElevatedButton(
+        content=ft.Text("GENERATE QUESTIONS", weight=ft.FontWeight.BOLD),
+        color=ft.Colors.WHITE,
+        bgcolor="#3949AB",
+        height=46,
+        expand=True,
+        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=23)),
+        on_click=generate_questions,
     )
 
     # ────────────────────────────────────────────────────────────────────
@@ -840,8 +916,13 @@ def generate_questions_view(page: ft.Page):
                 controls=[complexity_dropdown, downloads_dropdown],
                 spacing=12,
             ),
-            # Tabs
-            tabs,
+            upload_checkbox,
+            question_config_section,
+            upload_section,
+            ft.Container(
+                content=generate_button,
+                padding=ft.Padding(left=0, top=10, right=0, bottom=0),
+            ),
         ],
     )
 

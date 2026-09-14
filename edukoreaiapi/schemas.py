@@ -39,3 +39,15 @@ class GenerateQuestionsRequest(BaseModel):
     complexity: Literal["basic", "intermediate", "advanced"]
     questionRows: list[QuestionRowConfig]
     username: str
+
+
+class SaveUploadedQuestionsRequest(BaseModel):
+    class_name: str
+    subject: str
+    chapters: list[str]
+    assessmentCategory: str  # "fa" or "sa"
+    assessmentNumber: int    # 1 or 2
+    complexity: Literal["basic", "intermediate", "advanced"]
+    paperContent: str  # Previously scanned/edited question paper text
+    questionRows: list[QuestionRowConfig]
+    username: str

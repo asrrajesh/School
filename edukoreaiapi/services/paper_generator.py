@@ -13,8 +13,13 @@ _ASSESSMENT_CATEGORY_SHORT = {
 
 _QUESTION_TYPE_LABELS = {
     "mcq": "Choose the correct answer",
+    "fib": "Fill in the blanks with a suitable correct answer",
+    "mtf": "Match the following",
+    "tf": "Answer the following statements are True or False",
+    "sa": "Answer the following in one sentence",
     "short": "Answer the following questions (Short)",
     "long": "Answer the following questions (Long)",
+    "diagram": "Draw a neat labeled diagram of the following",
 }
 
 _ROMAN = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"]

@@ -29,7 +29,12 @@ def build_drawer(page: ft.Page) -> ft.NavigationDrawer:
     drawer_header = ft.Container(
         content=ft.Column(
             controls=[
-                ft.Icon(ft.Icons.SCHOOL, size=48, color=ft.Colors.WHITE),
+                ft.Image(
+                    src="resources/edukoreai-logo.jpg",
+                    width=48,
+                    height=48,
+                    fit=ft.ImageFit.CONTAIN,
+                ),
                 ft.Text("EduKoreAI", size=20, weight=ft.FontWeight.BOLD, color=ft.Colors.WHITE),
                 ft.Text(current_user, size=12, color=ft.Colors.with_opacity(0.80, ft.Colors.WHITE)),
             ],

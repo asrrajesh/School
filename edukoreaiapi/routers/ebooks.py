@@ -14,8 +14,8 @@ from database.db import (
     get_question_versions,
     #save_uploaded_questions,
 )
-from services.claude_ocr import extract_text_from_images
-from services.claude_questions import generate_questions_from_chapter, extract_questions_from_paper
+from services.ocr_service import extract_text_from_images
+from services.question_service import generate_questions_from_chapter, extract_questions_from_paper
 from services.paper_generator import generate_question_paper_docx
 from schemas import SaveChapterRequest, GenerateQuestionsRequest, SaveUploadedQuestionsRequest
 
@@ -38,7 +38,7 @@ def list_chapters(class_name: str, subject: str):
 
 
 class _UploadedImage:
-    """Adapts a FastAPI UploadFile to the (name, bytes) shape claude_ocr expects."""
+    """Adapts a FastAPI UploadFile to the (name, bytes) shape the OCR service expects."""
 
     def __init__(self, name: str, data: bytes):
         self.name = name

@@ -1,3 +1,5 @@
+from turtle import color
+
 import flet as ft
 from services.api_client import login_user
 
@@ -7,13 +9,14 @@ def login_view(page: ft.Page):
 
     # ── State ────────────────────────────────────────────────────────
     username_field = ft.TextField(
-        label="Username or Email",
+        label="Email or Mobile Number",
         prefix_icon=ft.Icons.PERSON_OUTLINE,
         border=ft.InputBorder.OUTLINE,
         border_radius=8,
         height=48,
         bgcolor=ft.Colors.with_opacity(0.02, ft.Colors.BLACK),
         text_size=13,
+        expand=True
     )
     
     password_field = ft.TextField(
@@ -26,6 +29,7 @@ def login_view(page: ft.Page):
         height=48,
         bgcolor=ft.Colors.with_opacity(0.02, ft.Colors.BLACK),
         text_size=13,
+        expand=True
     )
 
     def show_snack(msg: str, color=ft.Colors.RED_600):
@@ -68,62 +72,28 @@ def login_view(page: ft.Page):
         page.session.store.set("current_user", "Guest")
         page.navigate("/home")
 
-    # ── Tab Button Helper ────────────────────────────────────────────
-    def _tab_button(label: str, is_active: bool, on_click):
-        """Create a tab button with underline indicator."""
-        return ft.Container(
-            content=ft.Text(
-                label,
-                size=15,
-                weight=ft.FontWeight.W_600 if is_active else ft.FontWeight.NORMAL,
-                color="#3949AB" if is_active else ft.Colors.GREY_600,
-            ),
-            on_click=on_click,
-            border=ft.Border(
-                bottom=ft.BorderSide(2, "#3949AB") if is_active else None,
-            ),
-            padding=ft.Padding(bottom=8),
-        )
-
     # ── Main Content Layout ──────────────────────────────────────────
-    
-    # Header: Logo + Branding
-    header = ft.Container(
-        content=ft.Column(
-            controls=[
-                ft.Container(
-                    content=ft.Icon(ft.Icons.SCHOOL, size=25, color=ft.Colors.WHITE),
-                    bgcolor="#3949AB",
-                    border_radius=10,
-                    width=30,
-                    height=30,
-                    alignment=ft.Alignment.CENTER,
-                ),
-                ft.Text(
-                    "EduKoreAI",
-                    size=26,
-                    weight=ft.FontWeight.BOLD,
-                    color="#1a237e",
-                ),
-                ft.Text(
-                    "L E A R N .  G R O W .  S U C C E E D .",
-                    size=9,
-                    weight=ft.FontWeight.W_600,
-                    color="#3949AB",
-                ),
-            ],
-            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-            spacing=8,
-        ),
-        padding=ft.Padding(top=20, bottom=24),
+    logo = ft.Image(
+        src="resources/edukoreai-logo.jpg",
+        width=50,
+        height=50,
+        border_radius=10
     )
 
-    # Heading
-    heading = ft.Text(
-        "Welcome back",
-        size=24,
+    branding = ft.Text(
+        "EduKoreAI",
+        size=26,
         weight=ft.FontWeight.BOLD,
-        color="#1a237e",
+        color=ft.Colors.BLACK,
+        font_family="Cambria Regular"
+    )
+
+    tagline = ft.Text(
+        "L E A R N .  G R O W .  S U C C E E D .",
+        size=9,
+        weight=ft.FontWeight.W_600,
+        color="#146C5A",
+        font_family="Cambria Regular"
     )
 
     # Subheading
@@ -131,67 +101,49 @@ def login_view(page: ft.Page):
         "Sign in to your EduKoreAI dashboard",
         size=13,
         color=ft.Colors.GREY_600,
+        font_family="Cambria Regular"
     )
 
-    # Tab Switcher
-    tab_row = ft.Row(
-        controls=[
-            _tab_button("Sign In", True, None),
-            _tab_button("Sign Up", False, go_signup),
-        ],
-        spacing=32,
-        alignment=ft.MainAxisAlignment.START,
-        height=40,
-    )
-
-    # Input Fields
-    input_section = ft.Column(
-        controls=[
-            ft.Text("USERNAME OR EMAIL", size=11, weight=ft.FontWeight.W_600, color=ft.Colors.GREY_700),
-            ft.Container(height=6),
-            username_field,
-            ft.Container(height=16),
-            ft.Text("PASSWORD", size=11, weight=ft.FontWeight.W_600, color=ft.Colors.GREY_700),
-            ft.Container(height=6),
-            password_field,
-        ],
-        spacing=0,
-    )
-
-    # Forgot Password Link
-    forgot_link = ft.Container(
-        content=ft.Text(
-            "Forgot password?",
-            size=12,
-            color="#3949AB",
-            weight=ft.FontWeight.W_500,
-        ),
-        on_click=go_forgot,
-        padding=ft.Padding(top=12, bottom=0),
+    forgot_link = ft.Text(
+        "Forgot password?",
+        size=12,
+        color="#146C5A",
+        weight=ft.FontWeight.W_500,
+        font_family="Cambria Regular"
     )
 
     # Sign In Button
     signin_button = ft.ElevatedButton(
         "Sign In",
-        bgcolor="#3949AB",
-        color=ft.Colors.WHITE,
         height=48,
         width=float("inf"),
         style=ft.ButtonStyle(
-            bgcolor={"": "#3949AB"},
-            color={"": ft.Colors.WHITE},
-            shape={"": ft.RoundedRectangleBorder(radius=12)},
-            elevation={"": 2},
+            bgcolor="#146C5A",
+            color=ft.Colors.WHITE,
+            shape=ft.RoundedRectangleBorder(radius=12),
         ),
         on_click=do_login,
     )
 
     # Divider
-    divider_text = ft.Text(
-        "or continue with",
-        size=12,
-        color=ft.Colors.GREY_500,
-        text_align=ft.TextAlign.CENTER,
+    divider_text = ft.Row(
+        controls=[
+            ft.Container(
+                expand=True,
+                height=1,
+                bgcolor=ft.Colors.GREY_400,
+            ),
+            ft.Text(
+                "or continue with",
+                size=12,
+                color=ft.Colors.GREY_500,
+            ),
+            ft.Container(
+                expand=True,
+                height=1,
+                bgcolor=ft.Colors.GREY_400,
+            ),
+        ]
     )
 
     # Social Login Buttons
@@ -207,8 +159,8 @@ def login_view(page: ft.Page):
         height=44,
         expand=True,
         style=ft.ButtonStyle(
-            shape={"": ft.RoundedRectangleBorder(radius=8)},
-            side={"": ft.BorderSide(1, ft.Colors.GREY_300)},
+            shape=ft.RoundedRectangleBorder(radius=12),
+            side=ft.BorderSide(1, ft.Colors.GREY_300),
         ),
     )
 
@@ -224,8 +176,8 @@ def login_view(page: ft.Page):
         height=44,
         expand=True,
         style=ft.ButtonStyle(
-            shape={"": ft.RoundedRectangleBorder(radius=8)},
-            side={"": ft.BorderSide(1, ft.Colors.GREY_300)},
+            shape=ft.RoundedRectangleBorder(radius=8),
+            side=ft.BorderSide(1, ft.Colors.GREY_300),
         ),
     )
 
@@ -242,7 +194,7 @@ def login_view(page: ft.Page):
                 "Create an account",
                 on_click=go_signup,
                 style=ft.ButtonStyle(
-                    color={"": "#3949AB"},
+                    color="#146C5A",
                     padding=0,
                 ),
             ),
@@ -250,47 +202,64 @@ def login_view(page: ft.Page):
         alignment=ft.MainAxisAlignment.CENTER,
         spacing=0,
         wrap=True,
-    )
-
-    # Guest Login Option
-    guest_option = ft.TextButton(
-        "or continue as Guest",
-        on_click=do_guest_login,
-        style=ft.ButtonStyle(
-            color={"": ft.Colors.GREY_600},
-            padding=0,
-        ),
+        width=float("inf"),
     )
 
     # Assemble Card Content
     card_content = ft.Container(
         content=ft.Column(
             controls=[
-                header,
-                ft.Container(height=8),
-                heading,
-                subheading,
-                ft.Container(height=20),
-                tab_row,
-                ft.Container(height=24),
-                input_section,
-                ft.Container(height=4),
-                ft.Row(
-                    controls=[ft.Container(expand=True), forgot_link],
-                    alignment=ft.MainAxisAlignment.END,
-                ),
-                ft.Container(height=20),
-                signin_button,
-                ft.Container(height=20),
-                divider_text,
-                ft.Container(height=16),
-                social_buttons,
-                ft.Container(height=20),
-                signup_link,
-                ft.Container(height=8),
+                ft.Row(height=50),
                 ft.Container(
-                    content=guest_option,
+                    content=logo,
                     alignment=ft.Alignment.CENTER,
+                    height=60,
+                ),
+                ft.Container(
+                    content=branding,
+                    alignment=ft.Alignment.CENTER,
+                    height=40,
+                ),
+                ft.Container(
+                    content=tagline,
+                    alignment=ft.Alignment.CENTER,
+                    height=20,
+                ),
+                ft.Container(
+                    content=subheading,
+                    alignment=ft.Alignment(0, 1), # center horizontally, bottom vertically
+                    height=75,
+                ),
+                ft.Container(
+                    content=username_field,
+                    alignment=ft.Alignment.CENTER,
+                    height=60,
+                ),
+                ft.Container(
+                    content=password_field,
+                    alignment=ft.Alignment.CENTER,
+                    height=60,
+                ),
+                ft.Container(
+                    content=forgot_link,
+                    alignment=ft.Alignment(1, -1), # right horizontally, top vertically
+                    on_click=go_forgot,
+                    height=30,
+                ),
+                ft.Container(
+                    content=signin_button,
+                ),
+                ft.Container(
+                    content=divider_text,
+                    height=80,
+                ),
+                ft.Container(
+                    content=social_buttons
+                ),
+                ft.Container(
+                    content=signup_link,
+                    height=80,
+                    alignment=ft.Alignment(0, 0),
                 ),
             ],
             spacing=0,
@@ -298,7 +267,7 @@ def login_view(page: ft.Page):
             expand=True,
         ),
         padding=ft.Padding(left=24, right=24, top=24, bottom=24),
-        bgcolor=ft.Colors.WHITE,
+        bgcolor="#F2EFE8",
         expand=True,
     )
 
@@ -309,5 +278,5 @@ def login_view(page: ft.Page):
             expand=True,
         ),
         expand=True,
-        bgcolor="#F8F9FA",  # Now it works!
+        bgcolor="#F2EFE8",
     )

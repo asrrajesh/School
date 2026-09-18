@@ -128,7 +128,8 @@ def scan_images(image_files) -> str:
         ("images", (image_file.name, image_file.bytes, "application/octet-stream"))
         for image_file in image_files
     ]
-    response = httpx.post(f"{API_BASE_URL}/api/ebooks/scan", files=files, timeout=_TIMEOUT)
+    # OCR (EasyOCR model load on first run, or LLM vision) can take well over 30s.
+    response = httpx.post(f"{API_BASE_URL}/api/ebooks/scan", files=files, timeout=httpx.Timeout(300.0))
     response.raise_for_status()
     result = response.json()
     if not result.get("success"):
@@ -211,7 +212,7 @@ def upload_questions(
             f"{API_BASE_URL}/api/ebooks/upload-questions",
             data=data,
             files=files,
-            timeout=httpx.Timeout(120.0),  # Question extraction may take longer
+            timeout=httpx.Timeout(300.0),  # OCR + question extraction may take longer
         )
         response.raise_for_status()
         return response.json()

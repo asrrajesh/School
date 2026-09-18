@@ -7,8 +7,10 @@ from screens.home_screen import home_view
 from screens.setup_ebooks_screen import setup_ebooks_view
 from screens.generate_questions_screen import generate_questions_view
 from components.app_frame import with_app_frame
+
 from config.config import (
     APP_TITLE,
+    APP_LOGO,
     THEME_COLOR,
     BACKGROUND_COLOR,
     WINDOW_WIDTH,
@@ -18,7 +20,11 @@ from config.config import (
 
 # 1. Main MUST be an async function to allow 'await' on startup
 async def main(page: ft.Page):
+    page.fonts = {
+        "Cambria Regular": "fonts/Cambria Regular.ttf"
+    }
     page.title = APP_TITLE
+    page.window.icon = APP_LOGO
     page.theme = ft.Theme(color_scheme_seed=THEME_COLOR)
     page.bgcolor = BACKGROUND_COLOR
     page.padding = 0

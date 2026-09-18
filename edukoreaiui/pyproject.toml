@@ -5,3 +5,6 @@ description = "EduKoreAI Mobile Application"
 
 [tool.flet]
 app_title = "My School Application"
+
+[tool.flet.app]
+icon = "resources/edukoreai-logo.png"

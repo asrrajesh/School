@@ -1,4 +1,5 @@
 import flet as ft
+from pathlib import Path
 
 from screens.login_screen import login_view
 from screens.signup_screen import signup_view
@@ -20,11 +21,17 @@ from config.config import (
 
 # 1. Main MUST be an async function to allow 'await' on startup
 async def main(page: ft.Page):
+    script_dir = Path(__file__).parent.resolve()
+    icon_path = script_dir / APP_LOGO
+
     page.fonts = {
-        "Cambria Regular": "fonts/Cambria Regular.ttf"
+        "Cambria Regular": str((script_dir / "fonts/Cambria Regular.ttf").as_posix())
     }
     page.title = APP_TITLE
-    page.window.icon = APP_LOGO
+
+    if icon_path.exists():
+        page.window.icon = str(icon_path.as_posix())
+
     page.theme = ft.Theme(color_scheme_seed=THEME_COLOR)
     page.bgcolor = BACKGROUND_COLOR
     page.padding = 0

@@ -1,4 +1,5 @@
 import flet as ft
+from config.config import APP_LOGO
 
 """Fixed header/footer shell used on every page except login/signup."""
 
@@ -30,10 +31,9 @@ def build_drawer(page: ft.Page) -> ft.NavigationDrawer:
         content=ft.Column(
             controls=[
                 ft.Image(
-                    src="resources/edukoreai-logo.jpg",
+                    src=APP_LOGO,
                     width=48,
                     height=48,
-                    fit=ft.ImageFit.CONTAIN,
                 ),
                 ft.Text("EduKoreAI", size=20, weight=ft.FontWeight.BOLD, color=ft.Colors.WHITE),
                 ft.Text(current_user, size=12, color=ft.Colors.with_opacity(0.80, ft.Colors.WHITE)),

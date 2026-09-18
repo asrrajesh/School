@@ -47,7 +47,7 @@ API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8000")
 # ─────────────────────────────────────────────────────────────────────
 
 APP_TITLE = os.getenv("APP_TITLE", "EduKoreAI")
-APP_LOGO = os.getenv("APP_LOGO", "resources/edukoreai-logo.jpg")
+APP_LOGO = os.getenv("APP_LOGO", "resources/edukoreai-logo.ico")
 THEME_COLOR = os.getenv("THEME_COLOR", "#3949AB")
 
 

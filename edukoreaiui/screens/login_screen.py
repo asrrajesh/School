@@ -2,6 +2,7 @@ from turtle import color
 
 import flet as ft
 from services.api_client import login_user
+from config.config import APP_LOGO
 
 
 def login_view(page: ft.Page):
@@ -74,7 +75,7 @@ def login_view(page: ft.Page):
 
     # ── Main Content Layout ──────────────────────────────────────────
     logo = ft.Image(
-        src="resources/edukoreai-logo.jpg",
+        src=APP_LOGO,
         width=50,
         height=50,
         border_radius=10

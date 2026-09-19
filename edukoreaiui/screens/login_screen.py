@@ -1,7 +1,9 @@
 from turtle import color
+import asyncio
 
 import flet as ft
-from services.api_client import login_user
+from services.api_client import login_user, google_callback
+from services.oauth_flow import authenticate_with_google
 from config.config import APP_LOGO
 
 
@@ -53,7 +55,7 @@ def login_view(page: ft.Page):
 
         result = login_user(username, password)
         if result["success"]:
-            page.session.store.set("current_user", result["user"]["username"])
+            page.session.store.set("current_user", result["user"]["_id"])
             username_field.value = ""
             password_field.value = ""
             page.navigate("/home")
@@ -72,6 +74,48 @@ def login_view(page: ft.Page):
         """Login as guest."""
         page.session.store.set("current_user", "Guest")
         page.navigate("/home")
+
+    async def do_google_login(e):
+        """Handle Google OAuth login."""
+        try:
+            # Show loading state
+            google_button.disabled = True
+            google_button.update()
+
+            import sys
+            print("[DEBUG] Starting Google OAuth flow...", file=sys.stderr)
+
+            # Run OAuth flow
+            auth_code = await authenticate_with_google()
+
+            if not auth_code:
+                print("[DEBUG] No auth code received", file=sys.stderr)
+                show_snack("Google authentication failed. Please try again.", ft.Colors.RED_600)
+                google_button.disabled = False
+                google_button.update()
+                return
+
+            print(f"[DEBUG] Got auth code, sending to backend...", file=sys.stderr)
+            # Send auth code to backend for secure token exchange
+            result = google_callback(auth_code)
+            if result["success"]:
+                page.session.store.set("current_user", result["user"]["_id"])
+                username_field.value = ""
+                password_field.value = ""
+                # Navigate to home
+                page.go("/home")
+            else:
+                print(f"[DEBUG] Backend error: {result}", file=sys.stderr)
+                show_snack(result.get("error", "Authentication failed."), ft.Colors.RED_600)
+                google_button.disabled = False
+                google_button.update()
+        except Exception as ex:
+            import traceback
+            print(f"[DEBUG] Exception: {ex}", file=sys.stderr)
+            print(traceback.format_exc(), file=sys.stderr)
+            show_snack(f"Error: {str(ex)}", ft.Colors.RED_600)
+            google_button.disabled = False
+            google_button.update()
 
     # ── Main Content Layout ──────────────────────────────────────────
     logo = ft.Image(
@@ -163,6 +207,7 @@ def login_view(page: ft.Page):
             shape=ft.RoundedRectangleBorder(radius=12),
             side=ft.BorderSide(1, ft.Colors.GREY_300),
         ),
+        on_click=do_google_login,
     )
 
     apple_button = ft.OutlinedButton(

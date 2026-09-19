@@ -1,4 +1,5 @@
 import re
+import uuid
 import bcrypt
 from datetime import datetime
 from pymongo import MongoClient
@@ -22,8 +23,23 @@ def get_db():
     if _client is None:
         _client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=DB_CONNECTION_TIMEOUT)
         _db = _client[DB_NAME]
-        # Ensure unique index on username
-        _db.users.create_index("username", unique=True)
+        # Partial unique indexes (only enforce when field exists)
+        _db.users.create_index(
+            "email",
+            unique=True,
+            partialFilterExpression={"email": {"$exists": True}}
+        )
+        _db.users.create_index(
+            "mobile",
+            unique=True,
+            partialFilterExpression={"mobile": {"$exists": True}}
+        )
+        # Unique index on google_id (only enforce when field exists)
+        _db.users.create_index(
+            "google_id",
+            unique=True,
+            partialFilterExpression={"google_id": {"$exists": True}}
+        )
     return _db
 
 
@@ -53,7 +69,7 @@ def check_password(plain: str, hashed: str) -> bool:
 
 def register_user(username: str, password: str) -> dict:
     """
-    Register a new user.
+    Register a new user with email or mobile.
     Returns {'success': True} or {'success': False, 'error': '<message>'}.
     """
     username = username.strip()
@@ -64,11 +80,19 @@ def register_user(username: str, password: str) -> dict:
 
     try:
         db = get_db()
-        db.users.insert_one({
-            "username": username,
+        user_doc = {
+            "_id": str(uuid.uuid4()),
             "password": hash_password(password),
             "created_at": datetime.utcnow(),
-        })
+        }
+
+        # Determine if it's email or mobile
+        if is_valid_email(username):
+            user_doc["email"] = username
+        else:
+            user_doc["mobile"] = username
+
+        db.users.insert_one(user_doc)
         return {"success": True}
     except DuplicateKeyError:
         return {"success": False, "error": "This email / mobile number is already registered."}
@@ -152,18 +176,23 @@ def save_scanned_chapter(class_name: str, subject: str, chapter: str, content: s
 
 def login_user(username: str, password: str) -> dict:
     """
-    Authenticate a user.
+    Authenticate a user by email or mobile.
     Returns {'success': True, 'user': {...}} or {'success': False, 'error': '<message>'}.
     """
     username = username.strip()
     try:
         db = get_db()
-        user = db.users.find_one({"username": username})
+        # Search by email or mobile
+        if is_valid_email(username):
+            user = db.users.find_one({"email": username})
+        else:
+            user = db.users.find_one({"mobile": username})
+
         if user is None:
             return {"success": False, "error": "Account not found. Please sign up."}
         if not check_password(password, user["password"]):
             return {"success": False, "error": "Incorrect password. Please try again."}
-        return {"success": True, "user": {"username": user["username"]}}
+        return {"success": True, "user": {"_id": user["_id"], "email": user.get("email"), "mobile": user.get("mobile")}}
     except ConnectionFailure:
         return {"success": False, "error": "Cannot connect to database. Please try again."}
     except Exception as exc:
@@ -172,7 +201,7 @@ def login_user(username: str, password: str) -> dict:
 
 def request_password_reset(username: str) -> dict:
     """
-    Check if the user exists (stub for real reset logic).
+    Check if the user exists by email or mobile (stub for real reset logic).
     Returns {'success': True} or {'success': False, 'error': '<message>'}.
     """
     username = username.strip()
@@ -180,7 +209,12 @@ def request_password_reset(username: str) -> dict:
         return {"success": False, "error": "Enter a valid email address or mobile number."}
     try:
         db = get_db()
-        user = db.users.find_one({"username": username})
+        # Search by email or mobile
+        if is_valid_email(username):
+            user = db.users.find_one({"email": username})
+        else:
+            user = db.users.find_one({"mobile": username})
+
         if user is None:
             return {"success": False, "error": "No account found with that email / mobile number."}
         # In a real app, send reset link/OTP here.
@@ -339,3 +373,60 @@ def get_generated_questions(
         return None
     except Exception:
         return None
+
+
+def login_or_create_google_user(google_id: str, email: str, name: str) -> dict:
+    """
+    Handle Google OAuth login: return existing user or create new one.
+    If Google ID already linked, return user.
+    If email matches existing user, link Google ID to that user.
+    Otherwise create new user with Google ID.
+
+    Returns {'success': True, 'user': {...}} or {'success': False, 'error': '<message>'}.
+    """
+    try:
+        db = get_db()
+
+        # Check if Google ID already linked
+        user = db.users.find_one({"google_id": google_id})
+        if user:
+            return {"success": True, "user": {"_id": user["_id"], "email": user.get("email")}}
+
+        # Check if email exists (link Google ID to existing user)
+        if email:
+            user = db.users.find_one({"email": email})
+            if user:
+                # Link Google ID to existing user
+                db.users.update_one(
+                    {"_id": user["_id"]},
+                    {
+                        "$set": {
+                            "google_id": google_id,
+                            "auth_method": "google",  # Mark as Google-authenticated
+                            "linked_at": datetime.utcnow(),
+                        }
+                    }
+                )
+                return {"success": True, "user": {"_id": user["_id"], "email": email}}
+
+        # Create new user with Google ID
+        user_doc = {
+            "_id": str(uuid.uuid4()),
+            "google_id": google_id,
+            "email": email,
+            "auth_method": "google",
+            "linked_at": datetime.utcnow(),
+            "created_at": datetime.utcnow(),
+        }
+        db.users.insert_one(user_doc)
+        return {"success": True, "user": {"_id": user_doc["_id"], "email": email}}
+    except ConnectionFailure:
+        import sys
+        print(f"[DEBUG] Connection failure in login_or_create_google_user", file=sys.stderr)
+        return {"success": False, "error": "Cannot connect to database. Please try again."}
+    except Exception as exc:
+        import sys
+        import traceback
+        print(f"[DEBUG] Error in login_or_create_google_user: {exc}", file=sys.stderr)
+        print(traceback.format_exc(), file=sys.stderr)
+        return {"success": False, "error": str(exc)}

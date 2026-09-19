@@ -85,6 +85,18 @@ OLLAMA_REQUEST_TIMEOUT = get_env_int("OLLAMA_REQUEST_TIMEOUT", 120)
 
 
 # ─────────────────────────────────────────────────────────────────────
+# GOOGLE OAUTH CONFIGURATION
+# ─────────────────────────────────────────────────────────────────────
+
+GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
+GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "")
+GOOGLE_OAUTH_SCOPES = os.getenv(
+    "GOOGLE_OAUTH_SCOPES",
+    "openid,https://www.googleapis.com/auth/userinfo.profile,https://www.googleapis.com/auth/userinfo.email"
+).split(",")
+
+
+# ─────────────────────────────────────────────────────────────────────
 # SECURITY SETTINGS
 # ─────────────────────────────────────────────────────────────────────
 

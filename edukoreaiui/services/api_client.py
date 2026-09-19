@@ -54,6 +54,20 @@ def request_password_reset(username: str) -> dict:
         return _connection_error(exc)
 
 
+def google_callback(code: str) -> dict:
+    """Send Google auth code to backend for secure token exchange and user creation/login."""
+    try:
+        response = httpx.post(
+            f"{API_BASE_URL}/api/auth/google-callback",
+            params={"code": code},
+            timeout=_TIMEOUT,
+        )
+        response.raise_for_status()
+        return response.json()
+    except httpx.HTTPError as exc:
+        return _connection_error(exc)
+
+
 def get_scanned_chapter(class_name: str, subject: str, chapter: str) -> dict | None:
     try:
         response = httpx.get(

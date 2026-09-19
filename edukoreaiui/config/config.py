@@ -59,3 +59,15 @@ WINDOW_WIDTH = get_env_int("WINDOW_WIDTH", 400)
 WINDOW_HEIGHT = get_env_int("WINDOW_HEIGHT", 780)
 WINDOW_RESIZABLE = get_env_bool("WINDOW_RESIZABLE", True)
 BACKGROUND_COLOR = os.getenv("BACKGROUND_COLOR", "#F5F5F5")
+
+
+# ─────────────────────────────────────────────────────────────────────
+# GOOGLE OAUTH CONFIGURATION
+# ─────────────────────────────────────────────────────────────────────
+
+GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
+GOOGLE_OAUTH_PORT = get_env_int("GOOGLE_OAUTH_PORT", 8080)
+GOOGLE_OAUTH_SCOPES = os.getenv(
+    "GOOGLE_OAUTH_SCOPES",
+    "openid,https://www.googleapis.com/auth/userinfo.profile,https://www.googleapis.com/auth/userinfo.email"
+).split(",")

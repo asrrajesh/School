@@ -16,6 +16,10 @@ class ForgotPasswordRequest(BaseModel):
     username: str
 
 
+class GoogleLoginRequest(BaseModel):
+    token: str  # Google ID token from OAuth callback
+
+
 class SaveChapterRequest(BaseModel):
     class_name: str
     subject: str

@@ -9,7 +9,8 @@ _INACTIVE_COLOR = ft.Colors.GREY_500
 
 def build_drawer(page: ft.Page) -> ft.NavigationDrawer:
     """Shared navigation drawer opened from the header's menu icon."""
-    current_user = page.session.store.get("current_user") or ""
+    user_id = page.session.store.get("current_user") or ""
+    display_name = "Logged In" if user_id else ""
 
     async def close_drawer(e=None):
         await page.close_drawer()
@@ -36,7 +37,7 @@ def build_drawer(page: ft.Page) -> ft.NavigationDrawer:
                     height=48,
                 ),
                 ft.Text("EduKoreAI", size=20, weight=ft.FontWeight.BOLD, color=ft.Colors.WHITE),
-                ft.Text(current_user, size=12, color=ft.Colors.with_opacity(0.80, ft.Colors.WHITE)),
+                ft.Text(display_name, size=12, color=ft.Colors.with_opacity(0.80, ft.Colors.WHITE)),
             ],
             spacing=4,
         ),
@@ -133,27 +134,61 @@ def _footer_item(icon: str, label: str, active: bool = False, on_click=None) -> 
 
 
 def build_footer(page: ft.Page) -> ft.Container:
-    """Bottom bar: Home, Services, TBA1, TBA2 (Services/TBA1/TBA2 are placeholders, not wired yet)."""
+    """Floating bottom navigation bar."""
 
     def go_home(e):
-        page.navigate("/home")
+        page.go("/home")
 
     return ft.Container(
         content=ft.Row(
             controls=[
-                _footer_item(ft.Icons.HOME, "Home", active=True, on_click=go_home),
-                _footer_item(ft.Icons.MISCELLANEOUS_SERVICES, "Services"),
-                _footer_item(ft.Icons.HELP_OUTLINE, "TBA1"),
-                _footer_item(ft.Icons.HELP_OUTLINE, "TBA2"),
+                _footer_item(
+                    icon=ft.Icons.HOME_ROUNDED,
+                    label="Home",
+                    active=True,
+                    on_click=go_home,
+                ),
+                _footer_item(
+                    icon=ft.Icons.MISCELLANEOUS_SERVICES_ROUNDED,
+                    label="Services",
+                ),
+                _footer_item(
+                    icon=ft.Icons.HELP_OUTLINE_ROUNDED,
+                    label="TBA1",
+                ),
+                _footer_item(
+                    icon=ft.Icons.HELP_OUTLINE_ROUNDED,
+                    label="TBA2",
+                ),
             ],
             alignment=ft.MainAxisAlignment.SPACE_EVENLY,
         ),
-        bgcolor=ft.Colors.WHITE,
-        border=ft.Border(top=ft.BorderSide(1, ft.Colors.GREY_300)),
-        padding=ft.Padding(left=8, top=6, right=8, bottom=6),
-        width=float("inf"),
+        margin=ft.Margin(
+            left=16,
+            top=0,
+            right=16,
+            bottom=16,
+        ),
+        padding=ft.Padding(
+            left=12,
+            top=10,
+            right=12,
+            bottom=10,
+        ),
+        bgcolor=ft.Colors.with_opacity(
+            0.92,
+            ft.Colors.LIGHT_GREEN_100,
+        ),
+        border_radius=50,
+        shadow=[
+            ft.BoxShadow(
+                spread_radius=0,
+                blur_radius=20,
+                color=ft.Colors.with_opacity(0.15, ft.Colors.BLACK),
+                offset=ft.Offset(0, 6),
+            )
+        ],
     )
-
 
 def with_app_frame(content: ft.Control, page: ft.Page) -> ft.Column:
     """Wrap page content with the fixed header/footer and attach the shared drawer."""

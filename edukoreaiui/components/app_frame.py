@@ -193,12 +193,23 @@ def build_footer(page: ft.Page) -> ft.Container:
 def with_app_frame(content: ft.Control, page: ft.Page) -> ft.Column:
     """Wrap page content with the fixed header/footer and attach the shared drawer."""
     page.drawer = build_drawer(page)
-    return ft.Column(
+    return ft.Stack(
         controls=[
-            build_header(page),
             ft.Container(content=content, expand=True),
-            build_footer(page),
+            # Header overlay
+            ft.Container(
+                content=build_header(page),
+                top=0,
+                left=0,
+                right=0,
+            ),
+            # Footer overlay
+            ft.Container(
+                content=build_footer(page),
+                bottom=0,
+                left=0,
+                right=0,
+            ),
         ],
-        spacing=0,
         expand=True,
     )

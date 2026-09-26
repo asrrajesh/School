@@ -199,6 +199,31 @@ def login_user(username: str, password: str) -> dict:
         return {"success": False, "error": str(exc)}
 
 
+def get_user_by_id(user_id: str) -> dict:
+    """
+    Look up a user by their _id.
+    Returns {'success': True, 'user': {...}} or {'success': False, 'error': '<message>'}.
+    """
+    try:
+        db = get_db()
+        user = db.users.find_one({"_id": user_id})
+        if user is None:
+            return {"success": False, "error": "User not found."}
+        return {
+            "success": True,
+            "user": {
+                "_id": user["_id"],
+                "email": user.get("email"),
+                "mobile": user.get("mobile"),
+                "name": user.get("name"),
+            },
+        }
+    except ConnectionFailure:
+        return {"success": False, "error": "Cannot connect to database. Please try again."}
+    except Exception as exc:
+        return {"success": False, "error": str(exc)}
+
+
 def request_password_reset(username: str) -> dict:
     """
     Check if the user exists by email or mobile (stub for real reset logic).

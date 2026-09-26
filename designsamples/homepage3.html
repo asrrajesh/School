@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>EduKoreAI - Guest Mode</title>
+    <style>
+        /* Design System Sync from Original Login Screen */
+        :root {
+            --app-bg: #F7F4EF;          /* Off-white branding background */
+            --primary-teal: #116A54;     /* Deep active green element */
+            --accent-beige: #EEDAA2;     /* Warm secondary button fill */
+            --text-main: #1C1E1D;        /* High-contrast body copy */
+            --text-muted: #626A65;       /* Subdued metadata description */
+            --border-ui: #2D312E;        /* Sharp outline frame style */
+            --radius-ui: 12px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--app-bg);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* TOP NAVIGATION HEADER */
+        .app-header {
+            background-color: var(--app-bg);
+            border-bottom: 1.5px solid var(--border-ui);
+            padding: 16px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .brand-block {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .brand-name {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--text-main);
+            letter-spacing: -0.3px;
+        }
+
+        .link-account-btn {
+            background-color: var(--accent-beige);
+            border: 1.5px solid var(--border-ui);
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        /* SCROLLABLE INFORMATION CANVAS */
+        .app-main {
+            flex: 1;
+            padding: 20px 20px 90px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            overflow-y: auto;
+        }
+
+        /* HERO ZONE: Dynamic Greetings Fit Placement */
+        .guest-hero {
+            background-color: var(--primary-teal);
+            color: #FFFFFF;
+            padding: 24px 20px;
+            border-radius: var(--radius-ui);
+        }
+
+        .user-greeting {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 6px;
+            letter-spacing: -0.4px;
+        }
+
+        .guest-hero p {
+            font-size: 0.9rem;
+            opacity: 0.9;
+            line-height: 1.4;
+        }
+
+        /* ROLE ACTION CARD: Convert Guest to Portal Account */
+        .upgrade-card {
+            background-color: #FFFFFF;
+            border: 2px dashed var(--primary-teal);
+            border-radius: var(--radius-ui);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .upgrade-card h2 {
+            font-size: 1.05rem;
+            font-weight: 700;
+        }
+
+        .upgrade-card p {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            line-height: 1.4;
+        }
+
+        .action-button {
+            background-color: var(--primary-teal);
+            color: #FFFFFF;
+            border: 1.5px solid var(--border-ui);
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            text-align: center;
+            width: 100%;
+            cursor: pointer;
+        }
+
+        /* REUSABLE INFO CONTENT PANELS */
+        .info-panel {
+            background-color: #FFFFFF;
+            border: 1.5px solid var(--border-ui);
+            border-radius: var(--radius-ui);
+            padding: 16px;
+        }
+
+        .panel-header {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 800;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .feature-row {
+            display: flex;
+            gap: 14px;
+            padding: 12px 0;
+            border-bottom: 1px solid #F0ECE6;
+            align-items: center;
+        }
+
+        .feature-row:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .feature-icon {
+            width: 40px;
+            height: 40px;
+            background-color: var(--app-bg);
+            border: 1.5px solid var(--border-ui);
+            border-radius: 8px;
+            flex-shrink: 0;
+        }
+
+        .feature-text strong {
+            display: block;
+            font-size: 0.95rem;
+            margin-bottom: 2px;
+        }
+
+        .feature-text span {
+            font-size: 0.82rem;
+            color: var(--text-muted);
+        }
+
+        /* BOTTOM APP NAVIGATION BAR */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background-color: #FFFFFF;
+            border-top: 1.5px solid var(--border-ui);
+            height: 72px;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding-bottom: env(safe-area-inset-bottom);
+            z-index: 1000;
+        }
+
+        .nav-tab {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 0.72rem;
+            font-weight: 600;
+            width: 25%;
+        }
+
+        .nav-tab.active {
+            color: var(--primary-teal);
+        }
+
+        .tab-dot {
+            width: 20px;
+            height: 20px;
+            border: 1.5px solid currentColor;
+            border-radius: 4px;
+        }
+
+        .nav-tab.active .tab-dot {
+            background-color: var(--primary-teal);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- STICKY MOBILE TOP BAR -->
+    <header class="app-header">
+        <div class="brand-block">
+            <div style="width:24px; height:24px; background:var(--primary-teal); border-radius:4px;"></div>
+            <span class="brand-name">EduKoreAI</span>
+        </div>
+        <button class="link-account-btn">Setup Profile</button>
+    </header>
+
+    <!-- CONTENT FRAME -->
+    <main class="app-main">
+        
+        <!-- HERO ZONE -->
+        <div class="guest-hero">
+            <!-- IDEAL GREETING PLACEMENT -->
+            <h1 class="user-greeting">Hi Username,</h1>
+            <p>Welcome to the EduKoreAI ecosystem. Explore our campus highlights, admissions portal, and academic tools below.</p>
+        </div>
+
+        <!-- CALL TO ACTION: The link window facilitating profile upgrades later on -->
+        <section class="upgrade-card">
+            <div>
+                <h2>Received an Invite Code?</h2>
+                <p>If you are a Principal, Teacher, Student, or Parent, input your institutional activation token to transform your profile permissions.</p>
+            </div>
+            <button class="action-button">Enter Activation Code</button>
+        </section>
+
+        <!-- INFORMATION BLOCK: General Prospect / Public Content -->
+        <section class="info-panel">
+            <div class="panel-header">
+                <span>School Information</span>
+                <span style="color: var(--primary-teal); cursor:pointer;">View All</span>
+            </div>
+
+            <div class="feature-row">
+                <div class="feature-icon"></div>
+                <div class="feature-text">
+                    <strong>Online Admissions Portal</strong>
+                    <span>Submit new application forms or trace pending reviews.</span>
+                </div>
+            </div>
+
+            <div class="feature-row">
+                <div class="feature-icon"></div>
+                <div class="feature-text">
+                    <strong>Academic Calendar 2026-27</strong>
+                    <span>Track upcoming terms, public holidays, and exam windows.</span>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- FOOTER NAV FOR PUBLIC GUEST VIEW -->
+    <nav class="bottom-nav">
+        <button class="nav-tab active">
+            <div class="tab-dot"></div>
+            <span>Explore</span>
+        </button>
+        <button class="nav-tab">
+            <div class="tab-dot"></div>
+            <span>Admissions</span>
+        </button>
+        <button class="nav-tab">
+            <div class="tab-dot"></div>
+            <span>Events</span>
+        </button>
+        <button class="nav-tab">
+            <div class="tab-dot"></div>
+            <span>Help</span>
+        </button>
+    </nav>
+
+</body>
+</html>

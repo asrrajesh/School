@@ -62,6 +62,16 @@ BACKGROUND_COLOR = os.getenv("BACKGROUND_COLOR", "#F5F5F5")
 
 
 # ─────────────────────────────────────────────────────────────────────
+# LAUNCH MODE
+# ─────────────────────────────────────────────────────────────────────
+
+# "desktop" (native Flet window) or "web" (opens in the default browser).
+UI_MODE = os.getenv("UI_MODE", "desktop").strip().lower()
+# Port for web mode. Must differ from GOOGLE_OAUTH_PORT.
+WEB_PORT = get_env_int("WEB_PORT", 8550)
+
+
+# ─────────────────────────────────────────────────────────────────────
 # GOOGLE OAUTH CONFIGURATION
 # ─────────────────────────────────────────────────────────────────────
 

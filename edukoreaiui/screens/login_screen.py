@@ -1,4 +1,5 @@
-from turtle import color
+from pydoc import text
+from turtle import bgcolor, color
 import asyncio
 
 import flet as ft
@@ -19,7 +20,8 @@ def login_view(page: ft.Page):
         height=48,
         bgcolor=ft.Colors.with_opacity(0.02, ft.Colors.BLACK),
         text_size=13,
-        expand=True
+        expand=True,
+        value="9972130551"
     )
     
     password_field = ft.TextField(
@@ -32,7 +34,8 @@ def login_view(page: ft.Page):
         height=48,
         bgcolor=ft.Colors.with_opacity(0.02, ft.Colors.BLACK),
         text_size=13,
-        expand=True
+        expand=True,
+        value="aaaaaaaa"
     )
 
     def show_snack(msg: str, color=ft.Colors.RED_600):
@@ -195,8 +198,12 @@ def login_view(page: ft.Page):
     google_button = ft.OutlinedButton(
         content=ft.Row(
             controls=[
-                ft.Icon(ft.Icons.LANGUAGE, size=18, color="#3949AB"),
-                ft.Text("Google", size=12, weight=ft.FontWeight.W_500),
+                ft.Image(
+                    src="resources/google.webp",
+                    width=18,
+                    height=18,
+                ),
+                ft.Text("Google", size=12, weight=ft.FontWeight.W_500, color="#3949AB"),
             ],
             spacing=8,
             alignment=ft.MainAxisAlignment.CENTER,
@@ -205,7 +212,8 @@ def login_view(page: ft.Page):
         expand=True,
         style=ft.ButtonStyle(
             shape=ft.RoundedRectangleBorder(radius=12),
-            side=ft.BorderSide(1, ft.Colors.GREY_300),
+            side=ft.BorderSide(1, "#ECD8A8"),
+            bgcolor="#ECD8A8",
         ),
         on_click=do_google_login,
     )
@@ -213,8 +221,12 @@ def login_view(page: ft.Page):
     apple_button = ft.OutlinedButton(
         content=ft.Row(
             controls=[
-                ft.Icon(ft.Icons.APPLE, size=18, color="#000000"),
-                ft.Text("Apple", size=12, weight=ft.FontWeight.W_500),
+                ft.Image(
+                    src="resources/apple.png",
+                    width=18,
+                    height=18,
+                ),
+                ft.Text("Apple", size=12, weight=ft.FontWeight.W_500, color="#3949AB"),
             ],
             spacing=8,
             alignment=ft.MainAxisAlignment.CENTER,
@@ -222,8 +234,9 @@ def login_view(page: ft.Page):
         height=44,
         expand=True,
         style=ft.ButtonStyle(
-            shape=ft.RoundedRectangleBorder(radius=8),
-            side=ft.BorderSide(1, ft.Colors.GREY_300),
+            shape=ft.RoundedRectangleBorder(radius=12),
+            side=ft.BorderSide(1, "#ECD8A8"),
+            bgcolor="#ECD8A8",
         ),
     )
 

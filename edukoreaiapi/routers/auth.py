@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from database.db import login_user, register_user, request_password_reset, login_or_create_google_user
+from database.db import login_user, register_user, request_password_reset, login_or_create_google_user, get_user_by_id
 from services.google_oauth_service import verify_google_token
 from schemas import LoginRequest, SignupRequest, ForgotPasswordRequest, GoogleLoginRequest
 
@@ -15,6 +15,11 @@ def login(payload: LoginRequest):
 @router.post("/signup")
 def signup(payload: SignupRequest):
     return register_user(payload.username, payload.password)
+
+
+@router.get("/users/{user_id}")
+def get_user(user_id: str):
+    return get_user_by_id(user_id)
 
 
 @router.post("/forgot-password")

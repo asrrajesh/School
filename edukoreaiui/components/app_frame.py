@@ -25,7 +25,6 @@ def build_drawer(page: ft.Page) -> ft.NavigationDrawer:
 
     async def drawer_logout(e):
         await close_drawer()
-        page.session.store.remove("current_user")
         page.navigate("/login")
 
     drawer_header = ft.Container(
@@ -111,19 +110,20 @@ def build_header(page: ft.Page) -> ft.Container:
             ],
             spacing=4,
         ),
-        bgcolor=_ACTIVE_COLOR,
+        bgcolor="#ECD8A8",
         padding=ft.Padding(left=8, top=4, right=8, bottom=4),
         width=float("inf"),
+        height=43,
     )
 
 
-def _footer_item(icon: str, label: str, active: bool = False, on_click=None) -> ft.Container:
+def _footer_item(icon: str, label: str, active: bool = False, on_click=None, icon_size: int = 22) -> ft.Container:
     color = _ACTIVE_COLOR if active else _INACTIVE_COLOR
     return ft.Container(
         content=ft.Column(
             controls=[
-                ft.Icon(icon, color=color, size=22),
-                ft.Text(label, size=11, color=color),
+                ft.Icon(icon, color=color, size=icon_size),
+                ft.Text(label, size=8, color=color),
             ],
             horizontal_alignment=ft.CrossAxisAlignment.CENTER,
             spacing=2,
@@ -140,6 +140,7 @@ def build_footer(page: ft.Page) -> ft.Container:
         page.go("/home")
 
     return ft.Container(
+        height=43,
         content=ft.Row(
             controls=[
                 _footer_item(
@@ -147,18 +148,22 @@ def build_footer(page: ft.Page) -> ft.Container:
                     label="Home",
                     active=True,
                     on_click=go_home,
+                    icon_size=15
                 ),
                 _footer_item(
                     icon=ft.Icons.MISCELLANEOUS_SERVICES_ROUNDED,
                     label="Services",
+                    icon_size=15
                 ),
                 _footer_item(
                     icon=ft.Icons.HELP_OUTLINE_ROUNDED,
-                    label="TBA1",
+                    label="Help",
+                    icon_size=15
                 ),
                 _footer_item(
-                    icon=ft.Icons.HELP_OUTLINE_ROUNDED,
-                    label="TBA2",
+                    icon=ft.Icons.ACCOUNT_CIRCLE,
+                    label="You",
+                    icon_size=15
                 ),
             ],
             alignment=ft.MainAxisAlignment.SPACE_EVENLY,
@@ -175,19 +180,10 @@ def build_footer(page: ft.Page) -> ft.Container:
             right=12,
             bottom=10,
         ),
-        bgcolor=ft.Colors.with_opacity(
-            0.92,
-            ft.Colors.LIGHT_GREEN_100,
-        ),
+        # Glass effect: translucent fill + faint light border (no blur/shadow, which halo outside the oval)
+        bgcolor=ft.Colors.with_opacity(0.35, "#B6B7B4"),
+        border=ft.Border.all(1, ft.Colors.with_opacity(0.6, "#B6B7B4")),
         border_radius=50,
-        shadow=[
-            ft.BoxShadow(
-                spread_radius=0,
-                blur_radius=20,
-                color=ft.Colors.with_opacity(0.15, ft.Colors.BLACK),
-                offset=ft.Offset(0, 6),
-            )
-        ],
     )
 
 def with_app_frame(content: ft.Control, page: ft.Page) -> ft.Column:

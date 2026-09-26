@@ -41,6 +41,18 @@ def register_user(username: str, password: str) -> dict:
         return _connection_error(exc)
 
 
+def get_user(user_id: str) -> dict:
+    try:
+        response = httpx.get(
+            f"{API_BASE_URL}/api/auth/users/{user_id}",
+            timeout=_TIMEOUT,
+        )
+        response.raise_for_status()
+        return response.json()
+    except httpx.HTTPError as exc:
+        return _connection_error(exc)
+
+
 def request_password_reset(username: str) -> dict:
     try:
         response = httpx.post(
@@ -99,6 +111,15 @@ def save_scanned_chapter(class_name: str, subject: str, chapter: str, content: s
         return response.json()
     except httpx.HTTPError as exc:
         return _connection_error(exc)
+
+
+def get_menus() -> list[dict]:
+    try:
+        response = httpx.get(f"{API_BASE_URL}/api/menus", timeout=_TIMEOUT)
+        response.raise_for_status()
+        return response.json().get("panels", [])
+    except httpx.HTTPError:
+        return []
 
 
 def get_classes() -> list[str]:

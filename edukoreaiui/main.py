@@ -17,6 +17,8 @@ from config.config import (
     WINDOW_WIDTH,
     WINDOW_HEIGHT,
     WINDOW_RESIZABLE,
+    UI_MODE,
+    WEB_PORT,
 )
 
 # 1. Main MUST be an async function to allow 'await' on startup
@@ -69,15 +71,16 @@ async def main(page: ft.Page):
             page.drawer = None
 
         elif route == "/forgot_password":
-            page.views.append(
-                ft.View(
-                    route="/forgot_password",
-                    controls=[with_app_frame(forgot_password_view(page), page)],
-                    padding=0,
-                    bgcolor=ft.Colors.WHITE,  
-                )
+            forgot_password_container = ft.View(
+                route="/forgot_password",
+                controls=[],
+                padding=0,
+                bgcolor=ft.Colors.WHITE,
             )
+            page.views.append(forgot_password_container)
+            forgot_password_content = forgot_password_view(page)
             page.appbar = None
+            forgot_password_container.controls = [with_app_frame(forgot_password_content, page)]
 
         elif route == "/home":
             home_view_container = ft.View(
@@ -132,4 +135,7 @@ async def main(page: ft.Page):
     page.add(login_view(page))
 
 if __name__ == "__main__":
-    ft.run(main)
+    if UI_MODE == "web":
+        ft.run(main, view=ft.AppView.WEB_BROWSER, port=WEB_PORT)
+    else:
+        ft.run(main)

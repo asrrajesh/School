@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>EduKoreAI - Guest Mode</title>
+    <style>
+        /* NEW COLOR CONFIGURATION (Vibrant Tech Amethyst) */
+        :root {
+            --app-bg: #FAFAFC;          /* Crisp, ultra-clean off-white background */
+            --primary-purple: #4F46E5;  /* Vibrant digital amethyst/indigo */
+            --accent-coral: #FF7A60;    /* Energetic soft coral for primary actions */
+            --text-main: #111317;        /* Deep ink charcoal for maximum legibility */
+            --text-muted: #586171;       /* Cool slate grey for secondary strings */
+            --border-ui: #111317;        /* Keeps your precise structural wireframe look */
+            --radius-ui: 14px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--app-bg);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* TOP NAVIGATION HEADER */
+        .app-header {
+            background-color: #FFFFFF;
+            border-bottom: 2px solid var(--border-ui);
+            padding: 16px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .brand-block {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .brand-name {
+            font-size: 1.25rem;
+            font-weight: 800;
+            color: var(--text-main);
+            letter-spacing: -0.3px;
+        }
+
+        .link-account-btn {
+            background-color: #FFFFFF;
+            border: 2px solid var(--border-ui);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--text-main);
+            cursor: pointer;
+            box-shadow: 2px 2px 0px var(--border-ui);
+            transition: all 0.1s ease;
+        }
+        
+        .link-account-btn:active {
+            transform: translate(2px, 2px);
+            box-shadow: 0px 0px 0px var(--border-ui);
+        }
+
+        /* MAIN SCROLLABLE APP BODY */
+        .app-main {
+            flex: 1;
+            padding: 20px 20px 95px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            overflow-y: auto;
+        }
+
+        /* HERO PANEL WITH HIGHEST FIT GREETING PLACEMENT */
+        .guest-hero {
+            background-color: var(--primary-purple);
+            color: #FFFFFF;
+            padding: 26px 22px;
+            border-radius: var(--radius-ui);
+            border: 2px solid var(--border-ui);
+            box-shadow: 3px 3px 0px var(--border-ui);
+        }
+
+        .user-greeting {
+            font-size: 1.6rem;
+            font-weight: 800;
+            margin-bottom: 6px;
+            letter-spacing: -0.5px;
+            color: #FFFFFF;
+        }
+
+        .guest-hero p {
+            font-size: 0.92rem;
+            opacity: 0.9;
+            line-height: 1.45;
+        }
+
+        /* DASHED PROFILE TRANSITION MODULE */
+        .upgrade-card {
+            background-color: #FFFFFF;
+            border: 2px solid var(--border-ui);
+            border-radius: var(--radius-ui);
+            padding: 22px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            box-shadow: 3px 3px 0px var(--border-ui);
+        }
+
+        .upgrade-card h2 {
+            font-size: 1.1rem;
+            font-weight: 800;
+        }
+
+        .upgrade-card p {
+            font-size: 0.88rem;
+            color: var(--text-muted);
+            line-height: 1.45;
+        }
+
+        .action-button {
+            background-color: var(--accent-coral);
+            color: var(--text-main);
+            border: 2px solid var(--border-ui);
+            padding: 14px;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            font-weight: 700;
+            text-align: center;
+            width: 100%;
+            cursor: pointer;
+            box-shadow: 0px 3px 0px var(--border-ui);
+        }
+        
+        .action-button:active {
+            transform: translateY(2px);
+            box-shadow: 0px 1px 0px var(--border-ui);
+        }
+
+        /* REUSABLE INFO CONTAINER HOUSINGS */
+        .info-panel {
+            background-color: #FFFFFF;
+            border: 2px solid var(--border-ui);
+            border-radius: var(--radius-ui);
+            padding: 18px;
+        }
+
+        .panel-header {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            font-weight: 800;
+            color: var(--text-muted);
+            margin-bottom: 14px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .feature-row {
+            display: flex;
+            gap: 14px;
+            padding: 14px 0;
+            border-bottom: 2px solid #F1F3F7;
+            align-items: center;
+        }
+
+        .feature-row:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .feature-icon {
+            width: 42px;
+            height: 42px;
+            background-color: #F1F3F7;
+            border: 2px solid var(--border-ui);
+            border-radius: 10px;
+            flex-shrink: 0;
+        }
+
+        .feature-text strong {
+            display: block;
+            font-size: 0.98rem;
+            font-weight: 700;
+            margin-bottom: 2px;
+        }
+
+        .feature-text span {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        /* BOTTOM THUMB NAVIGATION FOOTER */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background-color: #FFFFFF;
+            border-top: 2px solid var(--border-ui);
+            height: 74px;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding-bottom: env(safe-area-inset-bottom);
+            z-index: 1000;
+        }
+
+        .nav-tab {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            font-weight: 700;
+            width: 25%;
+        }
+
+        .nav-tab.active {
+            color: var(--primary-purple);
+        }
+
+        .tab-square {
+            width: 22px;
+            height: 22px;
+            border: 2px solid currentColor;
+            border-radius: 6px;
+        }
+
+        .nav-tab.active .tab-square {
+            background-color: var(--accent-coral);
+            border-color: var(--border-ui);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- APP HEADER -->
+    <header class="app-header">
+        <div class="brand-block">
+            <div style="width:26px; height:26px; background:var(--primary-purple); border-radius:6px; border:2px solid var(--border-ui);"></div>
+            <span class="brand-name">EduKoreAI</span>
+        </div>
+        <button class="link-account-btn">Verify Account</button>
+    </header>
+
+    <!-- CONTENT ELEMENT CONTAINER -->
+    <main class="app-main">
+        
+        <!-- HERO GREETING CONTAINER -->
+        <div class="guest-hero">
+            <h1 class="user-greeting">Hi Username,</h1>
+            <p>Welcome to your central school platform. Explore public admissions tracks, campus announcements, or unlock specialized profile dashboards below.</p>
+        </div>
+
+        <!-- TRANSITION PIPELINE -->
+        <section class="upgrade-card">
+            <div>
+                <h2>Connect Your Institutional Profile</h2>
+                <p>Have an access card or verification token? Enter your school credentials below to upgrade to a Principal, Teacher, Student, or Parent dashboard view.</p>
+            </div>
+            <button class="action-button">Enter Portal Token</button>
+        </section>
+
+        <!-- EXPLORATION DATA PANEL -->
+        <section class="info-panel">
+            <div class="panel-header">
+                <span>School Exploration</span>
+                <span style="color: var(--primary-purple); font-weight:700; cursor:pointer;">See All</span>
+            </div>
+
+            <div class="feature-row">
+                <div class="feature-icon"></div>
+                <div class="feature-text">
+                    <strong>Admissions Desk</strong>
+                    <span>Apply for current terms and follow active progress pipelines.</span>
+                </div>
+            </div>
+
+            <div class="feature-row">
+                <div class="feature-icon"></div>
+                <div class="feature-text">
+                    <strong>Institutional Calendar</strong>
+                    <span>Review schedules, session timings, and public holidays.</span>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- FOOTER NAV NAVIGATION TRACK -->
+    <nav class="bottom-nav">
+        <button class="nav-tab active">
+            <div class="tab-square"></div>
+            <span>Explore</span>
+        </button>
+        <button class="nav-tab">
+            <div class="tab-square"></div>
+            <span>Admissions</span>
+        </button>
+        <button class="nav-tab">
+            <div class="tab-square"></div>
+            <span>Events</span>
+        </button>
+        <button class="nav-tab">

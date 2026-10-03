@@ -40,6 +40,8 @@ No UI tests and no lint/format config in either project. `fix_indexes.py` is a o
 
 Each change lives in `changes/<id>-<short-desc>/` and moves through: `/create-intent <requirements>` → `intent.md`; `/create-spec <id>` → `spec.md`; `/create-plan <id>` → `plan.md`; implement; `/update-knowledge <path to intent.md>`. Revise with `/update-intent`, `/update-spec`, `/update-plan <id> <changes>`. Each file has a status (`draft` → `approved` → `implemented`).
 
+Branches: `main` (release; the user merges `develop` into it and tags manually) and `develop` (integration) are fixed and never deleted or committed to directly. `/create-intent` creates `develop-<id>-<short-desc>` from `develop` (for example `develop-001-ui-not-launching`); every stage is committed on that branch as `<stage>(<id>): summary` with stages `intent`, `spec`, `plan`, `impl`, `knowledge`. Implementation has no skill: commit it as `impl(<id>): ...`, and run `/update-plan` if the work departs from the plan. Always ask the user before committing and again before pushing; never force-push. Finish with a PR from the change branch into `develop`.
+
 ## Common mistakes
 
 When a mistake happens twice, add it here.

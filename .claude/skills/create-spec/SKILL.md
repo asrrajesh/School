@@ -17,7 +17,15 @@ Produce `changes/<id>-<short-desc>/spec.md` next to the intent. The intent says 
 4. **Write `spec.md`** using the template below. Keep it as short as the change allows; a small fix needs a one-page spec. Do not invent requirements beyond the intent. Anything unresolved or any policy/security/UX concern goes under **Flagged concerns** and **Open questions** with an assumption.
 5. **Report** the path, a short summary, the flagged concerns and open questions, and next steps: review against the intent, resolve concerns, set spec status to `approved`, implement, then `/update-knowledge changes/<id>-<short-desc>/intent.md`.
 
-Do not commit unless the user asks.
+## Branch and commit
+
+Branch model: `main` (release, merged and tagged manually by the user) and `develop` (integration) are fixed branches; never commit on them. Each change lives on its own branch `develop-<id>-<short-desc>` created from `develop`, and every workflow stage is its own commit on that branch.
+
+Check the branch first: run `git branch --show-current`. It must be `develop-<id>-*` for this change. On `main` or `develop`, stop. If another `develop-<id>-*` branch exists, offer to switch to it (needs a clean working tree); otherwise tell the user the change has no branch. Do this before step 1's other work.
+
+Commit (never without asking):
+1. Show `git status` and the proposed message `spec(<id>): <summary>`, and ask the user whether to commit. Stage only the files this stage produced (`changes/<id>-*/spec.md`). Add the attribution trailer from the session reminder.
+2. After committing, ask separately whether to push (`git push -u origin <branch>`). Never force-push.
 
 ## Template
 

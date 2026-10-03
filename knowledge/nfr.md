@@ -1,6 +1,6 @@
 # Non-Functional Requirements (current state)
 
-> Reverse-engineered on 2026-10-03 (git `67ba196`). Records what the code and deployment files **do today** (qualities, constraints, gaps). It does not set targets. Where no behavior exists, the entry says so.
+> Last synced 2026-10-03 (git `b323155`). Records what the code and deployment files **do today** (qualities, constraints, gaps). It does not set targets. Where no behavior exists, the entry says so.
 
 ## 1. Security
 
@@ -64,7 +64,7 @@
 
 ## 9. Compatibility and platform
 - Python 3.12 (container and CI). Pinned: FastAPI 0.115.6, pymongo 4.17.0, pydantic 2.10.4, anthropic 0.69.0, python-docx 1.1.2.
-- UI: Flet; desktop window sized for phone (400 × 780), browser mode available when Windows Smart App Control blocks the desktop client; Android APK via CI.
+- UI: Flet; desktop window sized for phone (400 × 780), browser mode (`UI_MODE=web`) available when Windows Smart App Control / code integrity blocks the Flet desktop client (it blocked `media_kit_libs_windows_video_plugin.dll`, so the window never opens); at startup `main.py` prints the active mode and, on Windows desktop mode, a hint about this workaround, and reports and re-raises an exception from `ft.run`. A block inside the client process may still exit silently. Android APK via CI.
 - Locale: OCR language list configurable (`OCR_LANGUAGES`, default `en`); UI text is English only.
 
 ## 10. Accessibility

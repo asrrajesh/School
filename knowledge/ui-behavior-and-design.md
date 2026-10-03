@@ -1,7 +1,7 @@
 # UI Behavior and Design (current state)
 
-> Reverse-engineered on 2026-10-03 (git `67ba196`) from `edukoreaiui/` (Flet). Mockups in `designsamples/` are **target design**, not necessarily implemented; where the app and a mockup agree it is noted.
-> Platforms: native desktop window, browser (`UI_MODE=web`, port `WEB_PORT` 8550), and Android APK (Flet/Flutter build). Default window 400 × 780 (phone-sized), resizable.
+> Last synced 2026-10-03 (git `b323155`) from `edukoreaiui/` (Flet). Mockups in `designsamples/` are **target design**, not necessarily implemented; where the app and a mockup agree it is noted.
+> Platforms: native desktop window, browser (`UI_MODE=web`, port `WEB_PORT` 8550), and Android APK (Flet/Flutter build). Default window 400 × 780 (phone-sized), resizable. Startup (`main.py`) prints the active mode; in desktop mode on Windows it also prints a hint to use `UI_MODE=web` if no window opens (for example when Windows code integrity blocks the Flet client).
 
 ## 1. App shell (`main.py`, `components/app_frame.py`)
 

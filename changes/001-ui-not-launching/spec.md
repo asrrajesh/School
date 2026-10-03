@@ -3,7 +3,7 @@
 - **Intent:** [intent.md](intent.md)
 - **Author:** Rajesh
 - **Date:** 2026-10-03
-- **Status:** approved
+- **Status:** implemented (2026-10-03)
 
 ## Summary
 On this machine the Flet desktop client cannot start because Windows code integrity blocks one of its DLLs, and `main.py` exits without any message. Fix: make the browser mode the working path here and make the failure visible instead of silent.

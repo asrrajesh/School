@@ -63,7 +63,7 @@ Settings are read from each app's `.env` file. See `edukoreaiapi/.env.example` a
 
 ## Deployment
 
-- **API:** `edukoreaiapi/Dockerfile` and the manual GitHub Actions workflow `.github/workflows/deploy.yml` deploy to Google Cloud Run. Any new production environment variable must be added to that workflow and the repository secrets.
+- **API:** `edukoreaiapi/Dockerfile` and the manual GitHub Actions workflow `edukoreaiapi/.github/workflows/deploy.yml` deploy to Google Cloud Run. Any new production environment variable must be added to that workflow and the repository secrets.
 - **Android APK:** `edukoreaiui/.github/workflows/build-apk.yml` (manual). Set `API_BASE_URL` to the deployed API URL for such builds.
 
 ## Working on this project

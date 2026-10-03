@@ -34,13 +34,17 @@ No UI tests and no lint/format config in either project. `fix_indexes.py` is a o
 
 - API: `main.py` (app, CORS, OCR preload) → `routers/{auth,ebooks,menus}.py` → `services/` (`ocr_service`, `question_service`, `paper_generator`, `google_oauth_service`) → provider factories and `database/db.py` (pymongo, bcrypt). Models in `schemas.py`, settings in `config/config.py`.
 - UI: `main.py` (routing via `page.on_route_change`) → `screens/` → `services/api_client.py`. Settings in `config/config.py`.
-- Deploy: API via `edukoreaiapi/Dockerfile` and `.github/workflows/deploy.yml` (Cloud Run, manual). **Any new production env var must be added to that workflow's `env_vars` and the repo secrets.** UI APK via `edukoreaiui/.github/workflows/build-apk.yml`; set `API_BASE_URL` to the Cloud Run URL.
+- Deploy: API via `edukoreaiapi/Dockerfile` and `edukoreaiapi/.github/workflows/deploy.yml` (Cloud Run, manual). **Any new production env var must be added to that workflow's `env_vars` and the repo secrets.** UI APK via `edukoreaiui/.github/workflows/build-apk.yml`; set `API_BASE_URL` to the Cloud Run URL.
 
 ## Feature workflow
 
 Each change lives in `changes/<id>-<short-desc>/` and moves through: `/create-intent <requirements>` → `intent.md`; `/create-spec <id>` → `spec.md`; `/create-plan <id>` → `plan.md`; implement; `/update-knowledge <path to intent.md>`. Revise with `/update-intent`, `/update-spec`, `/update-plan <id> <changes>`. Each file has a status (`draft` → `approved` → `implemented`).
 
 Branches: `main` (release; the user merges `develop` into it and tags manually) and `develop` (integration) are fixed and never deleted or committed to directly. `/create-intent` creates `develop-<id>-<short-desc>` from `develop` (for example `develop-001-ui-not-launching`); every stage is committed on that branch as `<stage>(<id>): summary` with stages `intent`, `spec`, `plan`, `impl`, `knowledge`. Implementation has no skill: commit it as `impl(<id>): ...`, and run `/update-plan` if the work departs from the plan. Always ask the user before committing and again before pushing; never force-push. Finish with a PR from the change branch into `develop`.
+
+## Skills
+
+Workflow skills (`/create-intent` etc.) are manual slash commands. Policy skills (`api-contract`, `security-rules`, `ui-conventions`, `llm-provider-rules`) load automatically when a task matches their description. See `.claude/skills/README.md`; the repo owner approves skill changes.
 
 ## Common mistakes
 

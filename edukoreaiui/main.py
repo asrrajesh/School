@@ -1,3 +1,4 @@
+import sys
 import flet as ft
 from pathlib import Path
 
@@ -135,7 +136,16 @@ async def main(page: ft.Page):
     page.add(login_view(page))
 
 if __name__ == "__main__":
+    print(f"Starting EduKoreAI UI in {UI_MODE} mode")
     if UI_MODE == "web":
         ft.run(main, view=ft.AppView.WEB_BROWSER, port=WEB_PORT)
     else:
-        ft.run(main)
+        if sys.platform == "win32":
+            print("If no window opens, Windows Smart App Control / code integrity may be "
+                  "blocking the Flet desktop client. Set UI_MODE=web in .env to use the browser.")
+        try:
+            ft.run(main)
+        except Exception as exc:
+            print(f"Desktop client failed to start: {exc}")
+            print("Set UI_MODE=web in .env to use the browser.")
+            raise

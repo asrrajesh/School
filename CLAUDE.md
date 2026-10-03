@@ -11,6 +11,19 @@ This repository contains two independent Python applications that communicate on
 
 There is no shared code between the projects; they interact only through REST API calls. `designsamples/` holds static HTML design mockups (not part of either app).
 
+## Knowledge and Feature Workflow
+
+`knowledge/` is the reverse-engineered, **as-is** documentation of the application. Read the relevant file before changing behavior:
+
+- `knowledge/functional-specification.md` — what the product does, users and flows (there is only one role today)
+- `knowledge/data-model.md` — MongoDB collections, fields, indexes
+- `knowledge/api-specification.md` — every endpoint's request and response
+- `knowledge/prompt-and-generation-rule.md` — OCR, LLM prompts, question generation and `.docx` export rules
+- `knowledge/ui-behavior-and-design.md` — screens, behavior, visual design
+- `knowledge/nfr.md` — security, performance, deployment, known gaps
+
+New work follows this flow: write an `intent.md` for the feature (Problem, Proposed outcome, Affected users and systems, Constraints, Open questions; with author, date and status), implement it, then run `/update-knowledge <path to intent.md>` to merge what was built back into `knowledge/`. Keep knowledge files as current-state snapshots, not changelogs.
+
 ## Getting Started
 
 ### API (Backend)
@@ -155,7 +168,7 @@ Loads `.env`:
 - `UI_MODE`, `WEB_PORT`, `GOOGLE_CLIENT_ID`, `GOOGLE_OAUTH_PORT`, `GOOGLE_OAUTH_SCOPES`
 
 **`resources/`** and **`fonts/`**  
-- Logo: `edukoreai-logo.ico` (the `.env.example` default; `.jpg` is referenced in older docs/`pyproject.toml` — verify the file before relying on it)
+- Logo: `edukoreai-logo.ico` (`APP_LOGO`, also used by `pyproject.toml`)
 - Font: `Cambria Regular.ttf` (registered as `page.fonts["Cambria Regular"]`)
 
 ## Deployment

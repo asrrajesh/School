@@ -37,4 +37,12 @@ argument-hint: "[path to the feature's intent.md]"
 6. **Close the loop.** If an intent file was given, set its status line to `implemented` and add the date. Update `CLAUDE.md` only if commands, structure, endpoints list or architecture rules changed.
 7. **Report** to the user: files changed, one line per change, any intent-versus-code differences, and anything you could not verify.
 
-Do not commit unless the user asks.
+## Branch and commit
+
+Branch model: `main` (release, merged and tagged manually by the user) and `develop` (integration) are fixed branches; never commit on them. Each change lives on its own branch `develop-<id>-<short-desc>` created from `develop`, and every workflow stage is its own commit on that branch.
+
+Check the branch first: run `git branch --show-current`. It must be `develop-<id>-*` for this change. On `main` or `develop`, stop. If another `develop-<id>-*` branch exists, offer to switch to it (needs a clean working tree); otherwise tell the user the change has no branch. Take the id from the intent path in `$ARGUMENTS`.
+
+Commit (never without asking):
+1. Show `git status` and the proposed message `knowledge(<id>): <summary>`, and ask the user whether to commit. Stage only the files this stage produced (`knowledge/` and the intent's status line). Add the attribution trailer from the session reminder.
+2. After committing, ask separately whether to push (`git push -u origin <branch>`). Never force-push.

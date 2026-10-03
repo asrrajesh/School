@@ -69,3 +69,5 @@ Settings are read from each app's `.env` file. See `edukoreaiapi/.env.example` a
 ## Working on this project
 
 Read the relevant file in `knowledge/` before changing behavior. New work follows the flow documented in [CLAUDE.md](CLAUDE.md): intent, spec, plan, implement, then update knowledge.
+
+Branching: `main` is the release branch (merged from `develop` and tagged manually) and `develop` is the integration branch. Each change gets its own branch `develop-<id>-<short-desc>` created from `develop`, with one commit per stage (intent, spec, plan, implement, knowledge), and is merged back into `develop` by pull request.

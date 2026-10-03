@@ -18,7 +18,15 @@ Produce `changes/<id>-<short-desc>/plan.md`. The spec says what must be true; th
 5. **Write `plan.md`** using the template below. Keep it as short as the change allows. Do not add scope beyond the spec; if the plan reveals a gap or conflict in the spec, record it under **Open questions** and suggest `/update-spec`.
 6. **Report** the path, a short summary, the riskiest step, open questions, and next steps: review, set status to `approved`, implement step by step (run `/update-plan <id> ...` if the work departs from the plan), then `/update-knowledge changes/<id>-<short-desc>/intent.md`.
 
-Do not commit unless the user asks.
+## Branch and commit
+
+Branch model: `main` (release, merged and tagged manually by the user) and `develop` (integration) are fixed branches; never commit on them. Each change lives on its own branch `develop-<id>-<short-desc>` created from `develop`, and every workflow stage is its own commit on that branch.
+
+Check the branch first: run `git branch --show-current`. It must be `develop-<id>-*` for this change. On `main` or `develop`, stop. If another `develop-<id>-*` branch exists, offer to switch to it (needs a clean working tree); otherwise tell the user the change has no branch. Do this before step 1's other work.
+
+Commit (never without asking):
+1. Show `git status` and the proposed message `plan(<id>): <summary>`, and ask the user whether to commit. Stage only the files this stage produced (`changes/<id>-*/plan.md`). Add the attribution trailer from the session reminder.
+2. After committing, ask separately whether to push (`git push -u origin <branch>`). Never force-push.
 
 ## Template
 

@@ -19,7 +19,15 @@ If `$ARGUMENTS` is empty, ask the user to describe the feature and stop.
 4. **Ask only if blocked.** If the request is too vague to write a meaningful Problem or Outcome, ask the user one to three short questions before writing. Otherwise write the draft and list the gaps as open questions.
 5. **Report** the file path, a two-line summary, whether it is new or a change to existing behavior, which knowledge files it touches, and the open questions. Tell the user the next steps: review and edit the intent, set status to `approved`, implement, then run `/update-knowledge changes/<id>-<short-desc>/intent.md`.
 
-Do not commit unless the user asks.
+## Branch and commit
+
+Branch model: `main` (release, merged and tagged manually by the user) and `develop` (integration) are fixed branches; never commit on them. Each change lives on its own branch `develop-<id>-<short-desc>` created from `develop`, and every workflow stage is its own commit on that branch.
+
+Create the branch **before writing the file** (after step 2 has picked the id and name): require a clean working tree, run `git checkout develop`, `git pull --ff-only`, then `git checkout -b develop-<id>-<short-desc>` (for example `develop-001-ui-not-launching`). If the branch already exists or `develop` is missing, stop and tell the user.
+
+Commit (never without asking):
+1. Show `git status` and the proposed message `intent(<id>): <summary>`, and ask the user whether to commit. Stage only the files this stage produced (`changes/<id>-<short-desc>/intent.md`). Add the attribution trailer from the session reminder.
+2. After committing, ask separately whether to push (`git push -u origin <branch>`). Never force-push.
 
 ## Template
 

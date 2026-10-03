@@ -34,4 +34,12 @@ Revise an existing intent with the requirements in `$ARGUMENTS`. Expected form: 
    Add a `- **Last updated:** <date>` line to the header, below Status, if it is not there; otherwise change its date.
 8. **Report** to the user: the file path, the sections changed, the status (and why it changed, if it did), any conflicts or new open questions, and whether other knowledge files are now affected. Remind them that approving and then implementing is next, followed by `/update-knowledge <path>`.
 
-Do not commit unless the user asks.
+## Branch and commit
+
+Branch model: `main` (release, merged and tagged manually by the user) and `develop` (integration) are fixed branches; never commit on them. Each change lives on its own branch `develop-<id>-<short-desc>` created from `develop`, and every workflow stage is its own commit on that branch.
+
+Check the branch first: run `git branch --show-current`. It must be `develop-<id>-*` for this change. On `main` or `develop`, stop. If another `develop-<id>-*` branch exists, offer to switch to it (needs a clean working tree); otherwise tell the user the change has no branch. Do this before step 1's other work.
+
+Commit (never without asking):
+1. Show `git status` and the proposed message `intent(<id>): update - <summary>`, and ask the user whether to commit. Stage only the files this stage produced (`changes/<id>-*/intent.md`). Add the attribution trailer from the session reminder.
+2. After committing, ask separately whether to push (`git push -u origin <branch>`). Never force-push.

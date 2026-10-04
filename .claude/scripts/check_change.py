@@ -4,7 +4,8 @@ Usage (from the repo root):
   python .claude/scripts/check_change.py <id> --stage <stage>
   python .claude/scripts/check_change.py <id> --demote-from <intent|spec>
 
-Stages: intent-update, spec-create, spec-update, plan-create, plan-update, impl, knowledge.
+Stages: intent-update, spec-create, spec-update, plan-create, plan-update, impl, knowledge, wrap-up.
+--any-branch skips the branch rule (for wrap-up after the user already left the change branch).
 Exit code 0 = OK (warnings may print), 1 = a rule is violated. Standard library only.
 
 --demote-from sets downstream files that are `approved` back to `draft` (after the
@@ -30,6 +31,7 @@ RULES = {
     "plan-update": ({"intent": None, "spec": None, "plan": None}, None),
     "impl": ({"intent": None, "spec": {"approved", "implemented"}, "plan": {"approved", "implemented"}}, None),
     "knowledge": ({"intent": None, "spec": None, "plan": {"approved", "implemented"}}, None),
+    "wrap-up": ({"intent": {"implemented"}, "spec": {"implemented"}, "plan": {"implemented"}}, None),
 }
 
 
@@ -47,14 +49,14 @@ def status_of(path: Path) -> str | None:
     return match.group(2).lower() if match else None
 
 
-def check_stage(change_id: str, stage: str) -> int:
+def check_stage(change_id: str, stage: str, any_branch: bool = False) -> int:
     errors, warnings = [], []
     folder = find_dir(change_id)
     if folder is None:
         print(f"ERROR: no folder changes/{change_id}-* (run /create-intent first)")
         return 1
     branch = run("git", "branch", "--show-current")
-    if not branch.startswith(f"develop-{change_id}-"):
+    if not any_branch and not branch.startswith(f"develop-{change_id}-"):
         errors.append(f"current branch is '{branch}', expected develop-{change_id}-*")
 
     needs, must_not_exist = RULES[stage]
@@ -70,6 +72,10 @@ def check_stage(change_id: str, stage: str) -> int:
             errors.append(f"{name}.md status is '{status}', must be {' or '.join(sorted(allowed))}")
     if must_not_exist and (folder / f"{must_not_exist}.md").exists():
         errors.append(f"{must_not_exist}.md already exists (use the update skill instead)")
+
+    if stage == "wrap-up" and not any_branch and not errors:
+        if not run("git", "log", "--oneline", "develop..HEAD", "--grep", f"^knowledge({change_id})"):
+            errors.append(f"no 'knowledge({change_id})' commit on this branch; run /update-knowledge and commit it first")
 
     if stage == "knowledge" and not errors:
         commits = run("git", "log", "--oneline", "develop..HEAD", "--grep", f"^impl({change_id})")
@@ -115,9 +121,10 @@ def main() -> int:
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument("--stage", choices=sorted(RULES))
     group.add_argument("--demote-from", choices=ORDER[:2])
+    parser.add_argument("--any-branch", action="store_true", help="skip the branch rule")
     args = parser.parse_args()
     change_id = args.id.zfill(3)
-    return check_stage(change_id, args.stage) if args.stage else demote(change_id, args.demote_from)
+    return check_stage(change_id, args.stage, args.any_branch) if args.stage else demote(change_id, args.demote_from)
 
 
 if __name__ == "__main__":

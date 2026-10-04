@@ -12,6 +12,7 @@ They create branches and commits, so they are never triggered automatically (`di
 | `/create-plan`, `/update-plan` | `plan.md` (files, steps, risks, proofs) |
 | `/implement` | Implement the approved plan step by step with proofs; you approve before the `impl` commit |
 | `/update-knowledge` | Sync `knowledge/` with the code after implementation |
+| `/wrap-up` | Raise the PR into `develop` and ask for review; after you confirm the merge, delete the feature branch and return to up-to-date `develop` |
 
 Each workflow skill first runs `python .claude/scripts/check_change.py <id> --stage <stage>` (right branch, files exist, statuses allow the stage). `/update-intent` and `/update-spec` then run `--demote-from` so a downstream `approved` spec or plan goes back to `draft`. Run `--stage impl` yourself before coding.
 

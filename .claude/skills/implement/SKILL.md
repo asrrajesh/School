@@ -26,7 +26,7 @@ Once you have the id, run `python .claude/scripts/check_change.py <id> --stage i
 6. **Run the spec's Verification items** and any relevant existing tests or checks (for example `check_endpoints.py` for API changes). State what could not be verified (no UI tests, no live MongoDB or LLM, desktop client blocked, and so on). Never claim a check passed that was not run.
 7. **Write the implementation log.** Add or extend an `## Implementation log` section at the end of `plan.md`, one line per plan step with its proof result, plus any departures and unverified items. Do not change the plan's steps or its status.
 8. **Ask for approval.** Report to the developer: files changed, each step's proof result, departures, and what is unverified. Ask them to review the diff (`git diff`) and approve the implementation. Do not commit before they approve, and do not run `/update-knowledge` yourself.
-9. **After approval,** commit as below. Then tell the user the next step is to run `/update-knowledge changes/<id>-<short-desc>/intent.md` themselves (it is a manual command), followed by pushing and opening the PR into `develop`.
+9. **After approval,** commit as below. Then tell the user the next step is to run `/update-knowledge changes/<id>-<short-desc>/intent.md` themselves (it is a manual command), followed by `/wrap-up <id>` to raise the PR.
 
 If the developer asks for changes instead of approving, make them within the plan's scope (or go through step 5), re-run the affected proofs, update the log, and ask again.
 

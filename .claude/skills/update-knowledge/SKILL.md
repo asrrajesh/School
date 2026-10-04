@@ -49,4 +49,4 @@ Check the branch first: run `git branch --show-current`. It must be `develop-<id
 
 Commit (never without asking):
 1. Show `git status` and the proposed message `knowledge(<id>): <summary>`, and ask the user whether to commit. Stage only the files this stage produced (`knowledge/` and the intent's status line). Add the attribution trailer from the session reminder.
-2. After committing, ask separately whether to push (`git push -u origin <branch>`). Never force-push.
+2. After committing, ask separately whether to push (`git push -u origin <branch>`). Never force-push. Then tell the user the next step is `/wrap-up <id>` (raise the PR into `develop`).

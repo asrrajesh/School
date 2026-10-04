@@ -35,6 +35,10 @@ BASH_CASES = [
     ("git -C . commit -m x", "develop", True),
     ("FOO=1 git push", "develop", True),
     ("git status", "main", False),
+    ("git push origin --delete develop-001-x", "develop", True),
+    ("git push origin --delete develop-001-x", "docs/a", False),
+    ("git branch -D develop-001-x", "develop", False),
+    ("git checkout develop && git pull", CHANGE, False),
 ]
 EDIT_CASES = [
     ("edukoreaiapi/main.py", "develop", "ask"),

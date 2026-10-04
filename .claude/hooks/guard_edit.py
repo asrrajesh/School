@@ -43,7 +43,7 @@ def verdict(file_path: str, branch: str) -> tuple[str, str] | None:
         cwd=ROOT, capture_output=True, text=True,
     )
     if result.returncode != 0:
-        return "deny", "Workflow check failed: " + " ".join(result.stdout.split()).strip()
+        return "deny", "Workflow check failed (approve the spec and plan, then run /implement <id>): " + " ".join(result.stdout.split()).strip()
     return None
 
 

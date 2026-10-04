@@ -42,6 +42,10 @@ Each change lives in `changes/<id>-<short-desc>/` and moves through: `/create-in
 
 Branches: `main` (release; the user merges `develop` into it and tags manually) and `develop` (integration) are fixed and never deleted or committed to directly. `/create-intent` creates `develop-<id>-<short-desc>` from `develop` (for example `develop-001-ui-not-launching`); every stage is committed on that branch as `<stage>(<id>): summary` with stages `intent`, `spec`, `plan`, `impl`, `knowledge`. Implementation has no skill: before coding run `python .claude/scripts/check_change.py <id> --stage impl` (it requires an approved spec and plan on the right branch), and commit it as `impl(<id>): ...`, and run `/update-plan` if the work departs from the plan. Always ask the user before committing and again before pushing; never force-push. Finish with a PR from the change branch into `develop`.
 
+## Hooks
+
+`.claude/settings.json` registers two PreToolUse guards (scripts in `.claude/hooks/`, self-test: `python .claude/hooks/test_guards.py`). `guard_bash.py` blocks commits/pushes on `main` and `develop`, force-pushes, pushes to `main`/`develop`, `git merge` on `main`, creating tags, and deploy/release commands (`gcloud ... deploy`, `gh workflow run`, `gh release create`); the owner does those manually. `guard_edit.py` runs `check_change.py --stage impl` before edits to `edukoreaiapi/` or `edukoreaiui/` code on a `develop-<id>-*` branch (denied unless spec and plan are approved) and asks before editing app code on `main`/`develop`. A chained `git checkout -b x && git commit` is judged on the branch you start from; run them as separate commands.
+
 ## Skills
 
 Workflow skills (`/create-intent` etc.) are manual slash commands. Policy skills (`api-contract`, `security-rules`, `ui-conventions`, `llm-provider-rules`) load automatically when a task matches their description. See `.claude/skills/README.md`; the repo owner approves skill changes.

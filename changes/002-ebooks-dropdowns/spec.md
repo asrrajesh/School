@@ -3,7 +3,7 @@
 - **Intent:** [intent.md](intent.md)
 - **Author:** Rajesh
 - **Date:** 2026-10-04
-- **Status:** approved
+- **Status:** implemented (2026-10-04)
 
 ## Summary
 Replace the three chip selectors (Class, Subject, Chapter) on the Setup E-Books screen with Flet dropdowns styled like the Class dropdown on Generate Questions. Only the look changes: options, independence of the three fields and the load/scan/submit behavior stay exactly as they are.

@@ -4,7 +4,7 @@
 - **Spec:** [spec.md](spec.md)
 - **Author:** Rajesh
 - **Date:** 2026-10-04
-- **Status:** approved
+- **Status:** implemented (2026-10-04)
 
 ## Approach
 Swap the chip-based `SelectorState` selectors in `setup_ebooks_screen.py` for three `ft.Dropdown` controls that reuse the same variable names, so every `.value` read keeps working. Style comes from the Generate Questions Class dropdown (`label`, `hint_text`, `dense=True`, `expand=True`, each inside a `ft.Row`); nothing else on the screen changes.

@@ -1,6 +1,6 @@
 # UI Behavior and Design (current state)
 
-> Last synced 2026-10-03 (git `b323155`) from `edukoreaiui/` (Flet). Mockups in `designsamples/` are **target design**, not necessarily implemented; where the app and a mockup agree it is noted.
+> Last synced 2026-10-04 (git `aced244`) from `edukoreaiui/` (Flet). Mockups in `designsamples/` are **target design**, not necessarily implemented; where the app and a mockup agree it is noted.
 > Platforms: native desktop window, browser (`UI_MODE=web`, port `WEB_PORT` 8550), and Android APK (Flet/Flutter build). Default window 400 × 780 (phone-sized), resizable. Startup (`main.py`) prints the active mode; in desktop mode on Windows it also prints a hint to use `UI_MODE=web` if no window opens (for example when Windows code integrity blocks the Flet client).
 
 ## 1. App shell (`main.py`, `components/app_frame.py`)
@@ -29,7 +29,7 @@ Username field and submit. Shows the API result, then goes back to login. (Insid
 Scrolling column: teal hero card ("Hi <name>," then welcome text), an "Enter Activation Code" card **[placeholder]**, then one white panel per menu group from `GET /api/menus` showing up to 3 rows (title, description, optional icon box) and a "View All" label **[placeholder]**. If the API returns no menus, only the hero and activation cards show.
 
 ### Setup E-Books (`setup_ebooks_screen.py`)
-1. Three chip selectors: **Class** (I–X), **Subject** (Science, English, Computer Science, Mathematics), **Chapter** (1–50), single-select. Selecting any chip tries to load saved chapter text once all three are chosen.
+1. Three dense dropdowns (same style as the Generate Questions Class dropdown: label, "Select …" hint, full width, nothing preselected): **Class** (I–X), **Subject** (Science, English, Computer Science, Mathematics), **Chapter** (1–50). The option lists are fixed, the three are independent (no cascading), and selecting a value in any of them tries to load saved chapter text once all three are chosen.
 2. **Attach Images** (image picker, multiple) and **SCAN**, with a summary line of the attached file names.
 3. Multiline **Chapter Content** box (replaced by scan results, editable).
 4. **SUBMIT** (full-width rounded). Messages appear in colored snackbars: blue progress, red error, green success. Success navigates to `/home`.

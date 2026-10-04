@@ -35,66 +35,26 @@ def setup_ebooks_view(page: ft.Page):
             content_field.value = record["content"] if record else ""
             page.update()
 
-    class SelectorState:
-        def __init__(self, label, options):
-            self.label = label
-            self.options = options
-            self.value = None
-            self.chips = ft.Row(spacing=6, scroll=ft.ScrollMode.HIDDEN, expand=True)
-            self.field = ft.Container(
-                content=ft.Column(
-                    controls=[
-                        ft.Row(
-                            controls=[
-                                ft.Text(label, size=12, weight=ft.FontWeight.BOLD),
-                            ],
-                            height=18,
-                        ),
-                        self.chips,
-                    ],
-                    spacing=4,
-                ),
-                border=ft.Border.all(1, ft.Colors.GREY_700),
-                border_radius=6,
-                padding=ft.Padding(left=8, top=5, right=8, bottom=6),
-                height=62,
-            )
-            self.refresh()
+    def make_dropdown(label, options):
+        # Same style as the Class dropdown on the Generate Questions screen.
+        return ft.Dropdown(
+            hint_text=f"Select {label}",
+            label=label,
+            dense=True,
+            expand=True,
+            options=[ft.dropdown.Option(option) for option in options],
+            on_select=lambda e: page.run_task(load_existing_content),
+        )
 
-        def select(self, option):
-            self.value = option
-            self.refresh()
-            page.run_task(load_existing_content)
-
-        def refresh(self):
-            self.chips.controls = [
-                ft.Container(
-                    content=ft.Text(
-                        option,
-                        size=12,
-                        color=ft.Colors.WHITE if option == self.value else ft.Colors.GREY_900,
-                    ),
-                    bgcolor="#3949AB" if option == self.value else ft.Colors.WHITE,
-                    border=ft.Border.all(1, ft.Colors.GREY_500),
-                    border_radius=14,
-                    padding=ft.Padding(left=10, top=4, right=10, bottom=4),
-                    on_click=lambda e, selected=option: self.select(selected),
-                )
-                for option in self.options
-            ]
-
-    class_dropdown_state = SelectorState(
+    class_dropdown = make_dropdown(
         "Class", ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"]
     )
-    subject_dropdown_state = SelectorState(
+    subject_dropdown = make_dropdown(
         "Subject", ["Science", "English", "Computer Science", "Mathematics"]
     )
-    chapter_dropdown_state = SelectorState(
+    chapter_dropdown = make_dropdown(
         "Chapter", [str(chapter) for chapter in range(1, 51)]
     )
-    class_dropdown = class_dropdown_state
-    subject_dropdown = subject_dropdown_state
-    chapter_dropdown = chapter_dropdown_state
 
     file_picker = ft.FilePicker()
     page.services.append(file_picker)
@@ -182,9 +142,9 @@ def setup_ebooks_view(page: ft.Page):
             ft.Text("Choose the class, subject, chapter, and images to scan.", color=ft.Colors.GREY_600, size=14),
             
             # Dropdowns stacked cleanly into a clear column block
-            class_dropdown.field,
-            subject_dropdown.field,
-            chapter_dropdown.field,
+            ft.Row([class_dropdown]),
+            ft.Row([subject_dropdown]),
+            ft.Row([chapter_dropdown]),
             
             # Operational execution actions
             ft.Row(

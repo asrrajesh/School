@@ -9,6 +9,10 @@ argument-hint: "<id> <what to change or add>"
 
 Revise an existing spec with the changes in `$ARGUMENTS`. Expected form: `<id> <update>`. Do not write or change application code.
 
+## Workflow check
+
+Before step 1's other work, once you have the id, run `python .claude/scripts/check_change.py <id> --stage spec-update`. If it prints `ERROR`, stop and tell the user what to fix first; do not work around it. Show any `WARNING` to the user.
+
 ## Steps
 
 1. **Get the id.** The first word must be a number (normalize to three digits). If missing, list existing changes (folder, title, intent and spec status) and ask.
@@ -20,6 +24,8 @@ Revise an existing spec with the changes in `$ARGUMENTS`. Expected form: `<id> <
 7. **Edit in place** so the spec reads as one coherent current document. Keep the header's Intent link, Author and Date. Do not invent requirements; record vague or conflicting points under **Open questions**. Do not delete earlier content unless the update replaces it, and say what was removed.
 8. **Log the revision.** Add or extend a `## Revision history` section at the end (newest last): `- <YYYY-MM-DD> — <git user name> — <summary>. Request: "<update text>"`. Add or update a `- **Last updated:** <date>` header line under Status.
 9. **Report** the path, sections changed, status change and why, conflicts or new open questions.
+
+After editing, run `python .claude/scripts/check_change.py <id> --demote-from spec`. It sets a downstream `approved` file back to `draft` and warns about `implemented` ones; tell the user which files now need revising and re-approving.
 
 ## Branch and commit
 

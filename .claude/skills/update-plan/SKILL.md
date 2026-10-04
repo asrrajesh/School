@@ -9,6 +9,10 @@ argument-hint: "<id> <what to change or add>"
 
 Revise an existing plan with the changes in `$ARGUMENTS`. Expected form: `<id> <update>`. Do not write or change application code.
 
+## Workflow check
+
+Before step 1's other work, once you have the id, run `python .claude/scripts/check_change.py <id> --stage plan-update`. If it prints `ERROR`, stop and tell the user what to fix first; do not work around it. Show any `WARNING` to the user.
+
 ## Steps
 
 1. **Get the id.** The first word must be a number (normalize to three digits). If missing, list existing changes (folder, title, statuses) and ask.

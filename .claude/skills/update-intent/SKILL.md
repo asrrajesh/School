@@ -9,6 +9,10 @@ argument-hint: "<id> <what to change or add>"
 
 Revise an existing intent with the requirements in `$ARGUMENTS`. Expected form: `<id> <update requirements>`, for example `001 add a "remember me" checkbox and show an error after 3 failed attempts`. Do not write or change application code.
 
+## Workflow check
+
+Before step 1's other work, once you have the id, run `python .claude/scripts/check_change.py <id> --stage intent-update`. If it prints `ERROR`, stop and tell the user what to fix first; do not work around it. Show any `WARNING` to the user.
+
 ## Steps
 
 1. **Get the id.** Take the first word of `$ARGUMENTS`. It counts as an id only if it is a number (`1`, `01` or `001`; normalize to three digits).
@@ -33,6 +37,8 @@ Revise an existing intent with the requirements in `$ARGUMENTS`. Expected form: 
    ```
    Add a `- **Last updated:** <date>` line to the header, below Status, if it is not there; otherwise change its date.
 8. **Report** to the user: the file path, the sections changed, the status (and why it changed, if it did), any conflicts or new open questions, and whether other knowledge files are now affected. Remind them that approving and then implementing is next, followed by `/update-knowledge <path>`.
+
+After editing, run `python .claude/scripts/check_change.py <id> --demote-from intent`. It sets a downstream `approved` file back to `draft` and warns about `implemented` ones; tell the user which files now need revising and re-approving.
 
 ## Branch and commit
 

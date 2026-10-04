@@ -12,6 +12,8 @@ They create branches and commits, so they are never triggered automatically (`di
 | `/create-plan`, `/update-plan` | `plan.md` (files, steps, risks, proofs) |
 | `/update-knowledge` | Sync `knowledge/` with the code after implementation |
 
+Each workflow skill first runs `python .claude/scripts/check_change.py <id> --stage <stage>` (right branch, files exist, statuses allow the stage). `/update-intent` and `/update-spec` then run `--demote-from` so a downstream `approved` spec or plan goes back to `draft`. Run `--stage impl` yourself before coding.
+
 ## Policy skills (automatic, by trigger)
 Claude loads them when a task matches the "Use whenever ..." description.
 

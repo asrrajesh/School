@@ -9,6 +9,10 @@ argument-hint: "<id>"
 
 Produce `changes/<id>-<short-desc>/plan.md`. The spec says what must be true; the plan says **which files change, in what order, and how each step is proved**. Work read-only on the codebase (as in plan mode): the only file you write is `plan.md`. Do not change application code.
 
+## Workflow check
+
+Before step 1's other work, once you have the id, run `python .claude/scripts/check_change.py <id> --stage plan-create`. If it prints `ERROR`, stop and tell the user what to fix first; do not work around it. Show any `WARNING` to the user.
+
 ## Steps
 
 1. **Get the id** from `$ARGUMENTS` (a number; normalize to three digits). If missing, list the existing changes (folder, title, intent and spec status) and ask. Find `changes/<id>-*/`; it needs `intent.md` and `spec.md`, otherwise point to `/create-intent` or `/create-spec` and stop.

@@ -13,8 +13,12 @@ argument-hint: "[path to the feature's intent.md]"
 - Describe what the code **does now**, not what was planned. Verify every claim by reading the code. Do not copy it from the intent.
 - Edit existing sections in place. Do not append a changelog or a "new feature" section. Rewrite so each file reads as one coherent snapshot.
 - Keep the existing conventions: **[placeholder]** for UI that does nothing, *(inferred)* for guessed purpose, and "Known gaps" lists for defects. Remove a gap only if the code now fixes it. Add new gaps you notice.
-- Do not touch code. Only change files under `knowledge/` (and the status line of the intent file, step 6).
+- Do not touch code. Only change files under `knowledge/` (and the status lines of the change's intent, spec and plan, step 6).
 - If the intent and the code disagree (planned but not built, or built differently), document the code and tell the user about the difference.
+
+## Workflow check
+
+Before step 1's other work, once you have the id, run `python .claude/scripts/check_change.py <id> --stage knowledge`. If it prints `ERROR`, stop and tell the user what to fix first; do not work around it. Show any `WARNING` to the user.
 
 ## Steps
 
@@ -34,7 +38,7 @@ argument-hint: "[path to the feature's intent.md]"
    A single feature usually touches several files. Check each one, since a data change often affects the API and functional docs too.
 4. **Edit the knowledge files** following the rules above. Update tables, flows and the "gaps" lists.
 5. **Update the header** of every knowledge file you changed: `Reverse-engineered on <date> (git <hash>)` becomes `Last synced <today's date> (git <current short hash>)`. Use `git rev-parse --short HEAD`. If you changed files that were not committed yet, say so in the header.
-6. **Close the loop.** If an intent file was given, set its status line to `implemented` and add the date. Update `CLAUDE.md` only if commands, structure, endpoints list or architecture rules changed.
+6. **Close the loop.** If an intent file was given, set the status line of its `intent.md`, `spec.md` and `plan.md` to `implemented` and add the date. Update `CLAUDE.md` only if commands, structure, endpoints list or architecture rules changed.
 7. **Report** to the user: files changed, one line per change, any intent-versus-code differences, and anything you could not verify.
 
 ## Branch and commit

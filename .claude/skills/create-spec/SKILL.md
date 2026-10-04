@@ -9,6 +9,10 @@ argument-hint: "<id>"
 
 Produce `changes/<id>-<short-desc>/spec.md` next to the intent. The intent says **what and why**; the spec says **exactly what must be true and how it will be built and verified**. Do not write or change application code.
 
+## Workflow check
+
+Before step 1's other work, once you have the id, run `python .claude/scripts/check_change.py <id> --stage spec-create`. If it prints `ERROR`, stop and tell the user what to fix first; do not work around it. Show any `WARNING` to the user.
+
 ## Steps
 
 1. **Get the id** from `$ARGUMENTS` (a number; normalize to three digits). If missing, list the existing changes (folder, title, status) and ask. Find `changes/<id>-*/intent.md`; if none, say so and stop.

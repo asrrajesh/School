@@ -4,7 +4,7 @@
 - **Spec:** [spec.md](spec.md)
 - **Author:** Rajesh
 - **Date:** 2026-10-03
-- **Status:** draft
+- **Status:** implemented (2026-10-03)
 
 ## Approach
 Switch this machine to browser mode (`UI_MODE=web`), then make `main.py` report a failed desktop launch with the workaround instead of exiting silently. No API, data or knowledge-schema changes.

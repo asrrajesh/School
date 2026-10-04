@@ -41,3 +41,12 @@ No other file changes: not `generate_questions_screen.py`, `api_client.py`, the 
 
 ## Open questions
 1. Whether the developer will do the visual check in step 4 themselves. Assumption: yes; the implementation log will say what was and was not verified.
+
+## Implementation log
+- **Step 1:** done. `SelectorState` removed; three `ft.Dropdown` (`class_dropdown`, `subject_dropdown`, `chapter_dropdown`) with label, "Select ..." hint, `dense=True`, `expand=True`, the unchanged option lists and `on_select` calling `load_existing_content`. Proof: `py_compile` passed; grep finds no `SelectorState`. Detail: the three are built by a small local helper `make_dropdown(label, options)` with the option lists inline, instead of separate constants; same files and behavior, less repetition.
+- **Step 2:** done. The three `.field` placements are now `ft.Row([<dropdown>])`. Proof: grep finds no `.field`, `.chips` or `SelectorState`; `py_compile` passed.
+- **Step 3:** done. `git diff` touches only `setup_ebooks_screen.py`, in the selector block and the three form lines; `load_existing_content`, `scan_chapters` and `submit_content` are unchanged.
+- **Step 4:** partly verified. With `UI_MODE=web`, `python main.py` served the UI (HTTP 200 on port 8550). Building the view with a mock page succeeded and showed three Dropdowns labelled Class, Subject, Chapter, hints "Select Class/Subject/Chapter", `dense` and `expand` true, nothing preselected, options exactly Class I-X (10), the four subjects, and chapters 1-50. **Not verified:** the visual look in a browser, the real selection events and the load of saved chapter text, the SCAN/SUBMIT validation messages. These need someone to open the page.
+- **Step 5:** done. `python .claude/hooks/test_guards.py` reports 0 failures; `check_endpoints.py` reports OK (18 endpoints, 17 client calls, 1 allowlisted).
+- **Departures:** none beyond the helper noted in step 1.
+- **Unverified overall:** visual match with the Generate Questions Class dropdown, `on_select` triggering the load in a live session, desktop mode (blocked on this machine).

@@ -34,7 +34,7 @@ The last phase of a change: get it reviewed and merged, then clean up so the dev
    - Body: a Summary of what changed and why (from `intent.md` and `spec.md`), the files or areas touched, and a **Test plan** built from the spec's Verification and the plan's `## Implementation log`. Check only items that were actually run and passed; leave the rest unchecked and say why.
    - Link the change folder `changes/<id>-<short-desc>/`.
    - End the body with `🤖 Generated with [Claude Code](https://claude.com/claude-code)`.
-4. **Show the title and body and ask before creating** (it publishes content): `gh pr create --base develop --head <branch> --title ... --body ...`. Base is always `develop`, never `main`.
+4. **Show the title and body and ask before creating** (it publishes content). Write the body to a file in the scratchpad directory and pass it with `--body-file`: `gh pr create --base develop --head <branch> --title "..." --body-file <file>`. Never pass the body inline with `--body`; on Windows PowerShell 5.1 quotes in the body break the arguments. Base is always `develop`, never `main`.
 5. **Ask for review.** Give the PR link. Say the review should follow `REVIEW.md` (bugs and logic, security, compliance with the spec and plan), and offer to run `/code-review` on the branch first if the developer wants an AI pass. Ask them to review, merge when satisfied, and then confirm here (re-run `/wrap-up <id>` or say it is merged). Stop; do not merge the PR yourself.
 
 ## Phase B: clean up after the merge

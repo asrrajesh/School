@@ -11,7 +11,7 @@ Policy for reviewing pull requests in this repo, whether the reviewer is a perso
 Run all three on every PR. Report findings ranked by severity.
 
 1. **Bugs and logic.** Wrong behavior, unhandled errors, broken edge cases, off-by-one and null handling, regressions in existing flows, changes that only work in one `UI_MODE`.
-2. **Security.** Apply `security-rules`: secrets or personal data in code, logs or UI; client secret outside the API; password handling; widened CORS; a new production env var missing from `edukoreaiapi/.github/workflows/deploy.yml` or `.env.example`; unvalidated input.
+2. **Security.** Apply `security-rules`: secrets or personal data in code, logs or UI; client secret outside the API; password handling; widened CORS; a new production env var missing from `.github/workflows/deploy-api.yml` or `.env.example`; unvalidated input.
 3. **Compliance with the change.**
    - Does the code do what `spec.md` requires, and follow the steps in `plan.md`? Flag extra scope and missing requirements.
    - API changes mirrored in `edukoreaiui/services/api_client.py` (run `python .claude/skills/api-contract/scripts/check_endpoints.py`).

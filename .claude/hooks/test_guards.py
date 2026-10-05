@@ -26,7 +26,7 @@ BASH_CASES = [
     ("git tag -l", "docs/a", False),
     ("git tag", "docs/a", False),
     ("gcloud run deploy x", "docs/a", True),
-    ("gh workflow run deploy.yml", "docs/a", True),
+    ("gh workflow run deploy-api.yml", "docs/a", True),
     ("gh release create v1", "docs/a", True),
     ("gh pr create --base develop", "docs/a", False),
     ("cd x && git commit -m y", "main", True),

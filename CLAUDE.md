@@ -34,7 +34,7 @@ No UI tests and no lint/format config in either project. `fix_indexes.py` is a o
 
 - API: `main.py` (app, CORS, OCR preload) → `routers/{auth,ebooks,menus}.py` → `services/` (`ocr_service`, `question_service`, `paper_generator`, `google_oauth_service`) → provider factories and `database/db.py` (pymongo, bcrypt). Models in `schemas.py`, settings in `config/config.py`.
 - UI: `main.py` (routing via `page.on_route_change`) → `screens/` → `services/api_client.py`. Settings in `config/config.py`.
-- Deploy: API via `edukoreaiapi/Dockerfile` and `edukoreaiapi/.github/workflows/deploy.yml` (Cloud Run, manual). **Any new production env var must be added to that workflow's `env_vars` and the repo secrets.** UI APK via `edukoreaiui/.github/workflows/build-apk.yml`; set `API_BASE_URL` to the Cloud Run URL.
+- Deploy: API via `edukoreaiapi/Dockerfile` and `.github/workflows/deploy-api.yml` (Cloud Run, manual). **Any new production env var must be added to that workflow's `env_vars` and the repo secrets.** UI APK via `.github/workflows/build-apk.yml`; set `API_BASE_URL` to the Cloud Run URL.
 
 ## Feature workflow
 
@@ -56,4 +56,4 @@ When a mistake happens twice, add it here.
 
 - Building `pydantic-core` on Python 3.14 fails (no wheel, Rust build blocked by Windows Application Control, error 4551). Use Python 3.13 or 3.12 (the Dockerfile uses 3.12).
 - The Flet desktop client can be blocked by Windows code integrity / Smart App Control and exit silently. Set `UI_MODE=web` in `edukoreaiui/.env`. See `changes/001-ui-not-launching/`.
-- Changing an endpoint without updating `api_client.py`, or adding an API env var without updating `deploy.yml`.
+- Changing an endpoint without updating `api_client.py`, or adding an API env var without updating `deploy-api.yml`.

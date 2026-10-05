@@ -57,3 +57,14 @@ No change to `Dockerfile`, `.dockerignore`, `pyproject.toml`, app code or hook l
 
 ## Open questions
 1. PyYAML is not installed in this environment. Assumption: install it into the scratchpad only for the step 4 check (no project or global change). If that is unacceptable, the fallback is a manual diff review.
+
+## Implementation log
+- **Step 1:** done. Both files moved with `git mv` to `.github/workflows/deploy-api.yml` and `.github/workflows/build-apk.yml`; the empty nested `.github` folders are removed. Proof: `git ls-files '*/.github/*' '.github/*'` lists only the two root files; the nested folders no longer exist.
+- **Step 2:** done. `deploy-api.yml` differs from the old file by one line: `docker build -t ... edukoreaiapi`. Proof: `git diff -M` shows 1 line changed.
+- **Step 3:** done. `build-apk.yml` has job-level `defaults.run.working-directory: edukoreaiui`; "Locate built APK" has `working-directory: .` and `find edukoreaiui/build/apk`. Proof: `git diff -M` shows 6 lines added/changed (5 insertions, 1 replaced) and nothing else.
+- **Step 4:** done. PyYAML installed into the scratchpad only (`pip install --target`). Both files parse; for each, workflow name, triggers (including the `build_mode` input) and the set of `secrets.*`/`vars.*` references are identical to the old files from `git show HEAD:<old path>`.
+- **Step 5:** done. Paths updated in `CLAUDE.md`, `README.md`, `REVIEW.md`, `security-rules` and `llm-provider-rules` skills, and the sample command in `test_guards.py`. Proof: the grep for `edukoreaiapi/.github`, `edukoreaiui/.github` and `deploy.yml` (excluding `changes/` and venvs) returns only `knowledge/nfr.md` lines 53 and 56, left for `/update-knowledge`.
+- **Step 6:** done. `python .claude/hooks/test_guards.py` reports 0 failures; `check_endpoints.py` reports OK (18 endpoints, 17 client calls, 1 allowlisted).
+- **Step 7:** not run here. The developer triggers the APK workflow (debug first) and then the API deploy after the change is on `main`.
+- **Departures:** none.
+- **Unverified overall:** real GitHub runs of both workflows, the `flet build apk` run from `edukoreaiui/`, the WIF trust for `asrrajesh/School`.

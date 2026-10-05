@@ -16,6 +16,9 @@ jobs:
   build-apk:
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    defaults:
+      run:
+        working-directory: edukoreaiui
 
     steps:
       - name: Checkout repository
@@ -85,8 +88,9 @@ jobs:
       - name: Locate built APK
         id: locate
         shell: bash
+        working-directory: .
         run: |
-          apk_path=$(find build/apk -name "*.apk" | head -n 1)
+          apk_path=$(find edukoreaiui/build/apk -name "*.apk" | head -n 1)
           if [ -z "$apk_path" ]; then
             echo "No APK found!" >&2
             exit 1

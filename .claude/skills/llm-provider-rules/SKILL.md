@@ -12,7 +12,7 @@ Prompts, generation rules and the `.docx` format are documented in `knowledge/pr
 2. **Adding a provider:**
    - LLM: add `llm/providers/<name>_provider.py`, a `_build_<name>` function and an entry in `_BUILDERS` in `llm/factory.py`.
    - OCR: add the engine module, a `_build_<name>` function and an entry in `_BUILDERS` in `ocr/factory.py`.
-   - Add its settings to `config/config.py` and `edukoreaiapi/.env.example`. In production, secrets also go into `deploy.yml` (see the `security-rules` skill).
+   - Add its settings to `config/config.py` and `edukoreaiapi/.env.example`. In production, secrets also go into `deploy-api.yml` (see the `security-rules` skill).
 3. **Prompts live only in `llm/prompts/templates.py`.** Do not inline prompt text in services or providers.
 4. **LLM output is untrusted.** Parse JSON through `llm/json_utils.py` and handle `llm/exceptions.py` errors; keep the `{"success": false, "error": ...}` response shape on failure.
 5. **Heavy imports stay lazy** (for example EasyOCR is imported inside its builder) so unused providers do not load at startup.

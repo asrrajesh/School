@@ -47,7 +47,7 @@ jobs:
 
       - name: Build and push image
         run: |
-          docker build -t ${{ env.IMAGE }}:${{ github.sha }} .
+          docker build -t ${{ env.IMAGE }}:${{ github.sha }} edukoreaiapi
           docker push ${{ env.IMAGE }}:${{ github.sha }}
 
       - name: Deploy to Cloud Run

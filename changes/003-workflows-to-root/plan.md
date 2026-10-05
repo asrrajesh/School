@@ -4,7 +4,7 @@
 - **Spec:** [spec.md](spec.md)
 - **Author:** Rajesh
 - **Date:** 2026-10-05
-- **Status:** approved
+- **Status:** implemented (2026-10-05)
 
 ## Approach
 Move both workflow files to the root with `git mv` (history kept), make the minimum path edits so they work from the repo root, then replace the old paths in the docs, skills and the hook self-test. Move first, then edit the YAML, then the references, so each step is a small, reviewable diff.

@@ -3,7 +3,7 @@
 - **ID:** 003
 - **Author:** Rajesh
 - **Date:** 2026-10-05
-- **Status:** approved
+- **Status:** implemented (2026-10-05)
 - **Type:** change to existing behavior
 
 ## Developer request

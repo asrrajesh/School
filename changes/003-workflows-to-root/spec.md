@@ -3,7 +3,7 @@
 - **Intent:** [intent.md](intent.md)
 - **Author:** Rajesh
 - **Date:** 2026-10-05
-- **Status:** approved
+- **Status:** implemented (2026-10-05)
 
 ## Summary
 Move the two workflows from the nested `.github/` folders to the repo root as `deploy-api.yml` and `build-apk.yml`, adjusting only the paths that assumed the app folder was the repo root. Triggers, secrets, vars, `env_vars` and deploy targets stay as they are, and the old nested folders and the references to them go away.

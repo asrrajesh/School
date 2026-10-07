@@ -4,7 +4,7 @@
 - **Spec:** [spec.md](spec.md)
 - **Author:** Rajesh
 - **Date:** 2026-10-07
-- **Status:** approved
+- **Status:** implemented (2026-10-07)
 
 ## Approach
 Delete the first two lines of `edukoreaiui/screens/login_screen.py` and prove, without Docker, that the module and the app's import chain still load when `tkinter` is unavailable (the condition of the slim image). The real proof, a ready Cloud Run revision, is the developer's manual deploy after the merge to `main`.

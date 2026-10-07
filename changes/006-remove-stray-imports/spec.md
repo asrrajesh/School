@@ -3,7 +3,7 @@
 - **Intent:** [intent.md](intent.md)
 - **Author:** Rajesh
 - **Date:** 2026-10-07
-- **Status:** approved
+- **Status:** implemented (2026-10-07)
 
 ## Summary
 Delete the first two lines of `edukoreaiui/screens/login_screen.py` (`from pydoc import text` and `from turtle import bgcolor, color`). They are unused, and `turtle` cannot be imported without `tkinter`, which the `python:3.12-slim` image used by the UI's Dockerfile does not have. Nothing else changes.

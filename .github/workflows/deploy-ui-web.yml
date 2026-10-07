@@ -1,0 +1,67 @@
+name: Deploy UI (web) to Cloud Run
+
+# One-time setup required before this workflow can run:
+#   1. The GCP setup of deploy-api.yml (APIs, deployer service account, Workload
+#      Identity Federation) is shared; the deployer needs no new roles.
+#   2. Create an Artifact Registry Docker repo named "edukoreaiui" in asia-south1
+#   3. Add repo variables: API_BASE_URL (the API's Cloud Run URL), APP_TITLE,
+#      THEME_COLOR, BACKGROUND_COLOR (no secrets are baked into the UI image)
+on:
+  workflow_dispatch:
+
+env:
+  PROJECT_ID: edukoreai
+  REGION: asia-south1
+  SERVICE: edukoreaiui
+  REPOSITORY: edukoreaiui
+  IMAGE: asia-south1-docker.pkg.dev/edukoreai/edukoreaiui/edukoreaiui
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: PROD
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
+
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
+
+      - name: Build and push image
+        run: |
+          docker build -t ${{ env.IMAGE }}:${{ github.sha }} edukoreaiui
+          docker push ${{ env.IMAGE }}:${{ github.sha }}
+
+      - name: Deploy to Cloud Run
+        id: deploy
+        uses: google-github-actions/deploy-cloudrun@v2
+        with:
+          service: ${{ env.SERVICE }}
+          region: ${{ env.REGION }}
+          image: ${{ env.IMAGE }}:${{ github.sha }}
+          flags: --allow-unauthenticated --port=8080 --session-affinity --timeout=3600
+          env_vars: |
+            UI_MODE=web
+            API_BASE_URL=${{ vars.API_BASE_URL }}
+            APP_TITLE=${{ vars.APP_TITLE }}
+            THEME_COLOR=${{ vars.THEME_COLOR }}
+            BACKGROUND_COLOR=${{ vars.BACKGROUND_COLOR }}
+
+      - name: Show deployed URL
+        run: echo "Deployed to ${{ steps.deploy.outputs.url }}"

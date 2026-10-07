@@ -1,5 +1,3 @@
-from pydoc import text
-from turtle import bgcolor, color
 import asyncio
 
 import flet as ft

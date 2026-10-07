@@ -39,3 +39,12 @@ No other file changes. `knowledge/` is not expected to change; `/update-knowledg
 
 ## Open questions
 1. None new. The intent's questions stand: the developer may check the revision log to confirm the cause, and any further failure after this fix becomes a new change.
+
+## Implementation log
+- **Step 1:** done. Lines 1-2 of `edukoreaiui/screens/login_screen.py` removed; the file now starts with `import asyncio`. Proof: `git diff` shows exactly the two removed lines (2 deletions, 1 file); `python -m py_compile` exits 0; a search for `turtle`/`pydoc` imports in `edukoreaiui/` and `edukoreaiapi/` (excluding venvs) finds nothing.
+- **Step 2:** done. With `tkinter` and `_tkinter` set to `None` in `sys.modules` (run from `edukoreaiui/` with its venv), `import screens.login_screen` and `import main` both succeed. Before the change the first one raised `ModuleNotFoundError` (recorded in the spec).
+- **Step 3:** done. `FLET_FORCE_WEB_SERVER=true UI_MODE=web FLET_SERVER_PORT=18550 python main.py`: HTTP 200 on `http://127.0.0.1:18550/`; the process was stopped afterwards and nothing listens on 18550. Side observation: without `FLET_SERVER_IP` the server already listened on `0.0.0.0` and `[::]` on this machine, so the spec 005 remark that Flet would bind only 127.0.0.1 by default was not accurate; the Dockerfile setting is harmless and stays.
+- **Step 4:** done. `python .claude/hooks/test_guards.py` reports 0 failures; `check_endpoints.py` reports OK (18 endpoints, 17 client calls, 1 allowlisted); `git diff --stat` shows one file changed.
+- **Step 5:** not run here. The developer re-runs **Deploy UI (web) to Cloud Run** after the merge to `main` and optionally reads the log of revision `edukoreaiui-00001-krv`.
+- **Departures:** none.
+- **Unverified overall:** that these imports were the cause of the container crash (the revision log was not read), the Docker image and the Cloud Run revision, and the login page at the service URL.

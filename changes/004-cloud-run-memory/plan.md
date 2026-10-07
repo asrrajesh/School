@@ -4,7 +4,7 @@
 - **Spec:** [spec.md](spec.md)
 - **Author:** Rajesh
 - **Date:** 2026-10-07
-- **Status:** approved
+- **Status:** implemented (2026-10-07)
 
 ## Approach
 One-line edit: append `--memory=2Gi --cpu-boost` to the `flags` of the "Deploy to Cloud Run" step in the workflow, then prove statically that nothing else changed. The real proof (a ready revision and `/health`) is a manual deploy by the developer after the merge to `main`.

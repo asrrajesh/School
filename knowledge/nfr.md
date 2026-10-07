@@ -1,6 +1,6 @@
 # Non-Functional Requirements (current state)
 
-> Last synced 2026-10-05 (git `7ff2ee4`). Records what the code and deployment files **do today** (qualities, constraints, gaps). It does not set targets. Where no behavior exists, the entry says so.
+> Last synced 2026-10-07 (git `2de15dc`). Records what the code and deployment files **do today** (qualities, constraints, gaps). It does not set targets. Where no behavior exists, the entry says so.
 
 ## 1. Security
 
@@ -50,9 +50,9 @@
 - Provider choice is configuration only: `LLM_PROVIDER` (claude, openai, gemini, ollama) and `OCR_ENGINE` (easyocr, llm_vision). `LLM_MAX_TOKENS` and `LLM_TEMPERATURE` exist but are not applied to question generation.
 
 ## 7. Deployment and operations
-- **API:** `edukoreaiapi/Dockerfile` (python:3.12-slim, `uvicorn main:app` on `$PORT`, default 8080). `.github/workflows/deploy-api.yml` (repo root) is **manual** (`workflow_dispatch`): authenticates to Google Cloud via Workload Identity Federation, builds the image from `edukoreaiapi/` and pushes it to Artifact Registry (`asia-south1`), and deploys to Cloud Run service `edukoreaiapi` in project `edukoreai` with `--allow-unauthenticated --port=8080`. Environment name `PROD`; secrets `WIF_PROVIDER`, `WIF_SERVICE_ACCOUNT`, `MONGO_URI`, `DB_NAME`, `ANTHROPIC_API_KEY`, `ANTHROPIC_MODEL`; vars `DB_CONNECTION_TIMEOUT`, `CORS_ORIGINS`.
+- **API:** `edukoreaiapi/Dockerfile` (python:3.12-slim, `uvicorn main:app` on `$PORT`, default 8080). `.github/workflows/deploy-api.yml` (repo root) is **manual** (`workflow_dispatch`): authenticates to Google Cloud via Workload Identity Federation, builds the image from `edukoreaiapi/` and pushes it to Artifact Registry (`asia-south1`), and deploys to Cloud Run service `edukoreaiapi` in project `edukoreai` with `--allow-unauthenticated --port=8080 --memory=2Gi --cpu-boost`. Environment name `PROD`; secrets `WIF_PROVIDER`, `WIF_SERVICE_ACCOUNT`, `MONGO_URI`, `DB_NAME`, `ANTHROPIC_API_KEY`, `ANTHROPIC_MODEL`; vars `DB_CONNECTION_TIMEOUT`, `CORS_ORIGINS`.
 - **Not in the deploy workflow:** Google OAuth variables, `LLM_PROVIDER`, `OCR_ENGINE` and the other provider keys. In production the defaults apply (`LLM_PROVIDER=claude`, `OCR_ENGINE=easyocr`), and Google sign-in is not configured.
-- The container image installs EasyOCR with its model downloads at runtime (size and cold-start impact not measured).
+- The container image installs EasyOCR with its model downloads at runtime (cold-start time not measured). The OCR engine is built during app startup, before the server listens; a first deploy with the Cloud Run default of 512 MiB was killed for exceeding it (533 MiB used, 2026-10-05), so the workflow now sets 2 GiB memory and startup CPU boost. That 2 GiB is enough has not been verified yet.
 - **UI:** `.github/workflows/build-apk.yml` (repo root) is manual (release or debug), Python 3.12, Java 17, Flutter 3.44.8; builds an Android APK, running its install, `.env` creation and `flet build apk` steps in `edukoreaiui/`. `API_BASE_URL` must point to the deployed API.
 - The UI's Google flow needs a free local port (`GOOGLE_OAUTH_PORT`, default 8080), which suits desktop but not the web or mobile builds.
 - No database migrations, backups, or environment promotion process are defined in the repo. MongoDB hosting is external (`MONGO_URI`, for example Atlas).

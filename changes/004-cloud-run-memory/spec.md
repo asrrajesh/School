@@ -3,7 +3,7 @@
 - **Intent:** [intent.md](intent.md)
 - **Author:** Rajesh
 - **Date:** 2026-10-07
-- **Status:** approved
+- **Status:** implemented (2026-10-07)
 
 ## Summary
 Add `--memory=2Gi --cpu-boost` to the Cloud Run deploy `flags` in `.github/workflows/deploy-api.yml`, so the API container can load the EasyOCR engine at startup without being killed at Cloud Run's 512 MiB default. Nothing else changes.

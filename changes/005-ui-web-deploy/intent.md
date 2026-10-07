@@ -3,7 +3,7 @@
 - **ID:** 005
 - **Author:** Rajesh
 - **Date:** 2026-10-07
-- **Status:** approved
+- **Status:** implemented (2026-10-07)
 - **Type:** new feature
 
 ## Developer request

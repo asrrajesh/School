@@ -3,7 +3,7 @@
 - **Intent:** [intent.md](intent.md)
 - **Author:** Rajesh
 - **Date:** 2026-10-07
-- **Status:** approved
+- **Status:** implemented (2026-10-07)
 
 ## Summary
 Add a Dockerfile and `.dockerignore` for the Flet UI and a third manual workflow, `.github/workflows/deploy-ui-web.yml`, that builds the image, pushes it to Artifact Registry and deploys it as a Cloud Run service. In the container Flet is told where to listen through environment variables, so `main.py` stays unchanged.

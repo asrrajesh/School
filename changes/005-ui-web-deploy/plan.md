@@ -4,7 +4,7 @@
 - **Spec:** [spec.md](spec.md)
 - **Author:** Rajesh
 - **Date:** 2026-10-07
-- **Status:** approved
+- **Status:** implemented (2026-10-07)
 
 ## Approach
 Add the three new files (Dockerfile, `.dockerignore`, workflow) modeled on the API's, with no change to `main.py`, since Flet reads `FLET_SERVER_IP` and `FLET_SERVER_PORT` from the environment. Before writing the workflow, prove locally that the Flet env variables really make the server listen where the Dockerfile says, because Docker is not available here. Then update the docs that list the workflows.

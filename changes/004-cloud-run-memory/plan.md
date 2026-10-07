@@ -42,3 +42,11 @@ No change to app code, `Dockerfile`, `.dockerignore`, other workflows or the hoo
 
 ## Open questions
 1. None new. The spec's open question (whether probe or CPU settings also need changes) is deliberately left to a follow-up if the next deploy fails.
+
+## Implementation log
+- **Step 1:** done. The `flags` line in `.github/workflows/deploy-api.yml` is now `--allow-unauthenticated --port=8080 --memory=2Gi --cpu-boost`. Proof: `git diff` shows 1 line changed (1 insertion, 1 deletion), the `flags` line.
+- **Step 2:** done. The file parses (PyYAML from the scratchpad). Compared with `git show HEAD:...`: the secrets/vars references are identical, the `env_vars` block is identical, and everything except `flags` in the workflow is identical.
+- **Step 3:** done. `python .claude/hooks/test_guards.py` reports 0 failures; `check_endpoints.py` reports OK (18 endpoints, 17 client calls, 1 allowlisted).
+- **Step 4:** not run here. The developer runs **Deploy API to Cloud Run** after the merge to `main` and checks `/health`.
+- **Departures:** none.
+- **Unverified overall:** that 2 GiB is enough and the revision becomes ready, the actual peak memory, the `/health` response and the cost impact.

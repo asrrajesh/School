@@ -65,6 +65,7 @@ Settings are read from each app's `.env` file. See `edukoreaiapi/.env.example` a
 
 - **API:** `edukoreaiapi/Dockerfile` and the manual GitHub Actions workflow `.github/workflows/deploy-api.yml` deploy to Google Cloud Run. Any new production environment variable must be added to that workflow and the repository secrets.
 - **Android APK:** `.github/workflows/build-apk.yml` (manual). Set `API_BASE_URL` to the deployed API URL for such builds.
+- **UI (web):** `edukoreaiui/Dockerfile` and the manual workflow `.github/workflows/deploy-ui-web.yml` deploy the Flet web server to its own Cloud Run service. One-time setup: create the Artifact Registry Docker repo `edukoreaiui` in `asia-south1` and set the repository variable `API_BASE_URL` to the API's Cloud Run URL (`APP_TITLE`, `THEME_COLOR` and `BACKGROUND_COLOR` are repository variables too). Google sign-in does not work on the hosted web app.
 
 ## Working on this project
 

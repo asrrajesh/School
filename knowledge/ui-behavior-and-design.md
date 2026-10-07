@@ -1,6 +1,6 @@
 # UI Behavior and Design (current state)
 
-> Last synced 2026-10-07 (git `445c93f`) from `edukoreaiui/` (Flet). Mockups in `designsamples/` are **target design**, not necessarily implemented; where the app and a mockup agree it is noted.
+> Last synced 2026-10-07 (git `5d3f79f`) from `edukoreaiui/` (Flet). Mockups in `designsamples/` are **target design**, not necessarily implemented; where the app and a mockup agree it is noted.
 > Platforms: native desktop window, browser (`UI_MODE=web`, port `WEB_PORT` 8550 locally; in the Cloud Run container the port comes from `$PORT` through Flet's `FLET_SERVER_PORT`, see `nfr.md`), and Android APK (Flet/Flutter build). Default window 400 × 780 (phone-sized), resizable. Startup (`main.py`) prints the active mode; in desktop mode on Windows it also prints a hint to use `UI_MODE=web` if no window opens (for example when Windows code integrity blocks the Flet client).
 
 ## 1. App shell (`main.py`, `components/app_frame.py`)
@@ -75,4 +75,3 @@ Which sample (if any) is the chosen target for new screens is not recorded in th
 ## 5. Behaviors worth knowing
 - Network calls run in worker threads (`asyncio.to_thread`) so the UI stays responsive; list calls return empty lists on failure, so an unreachable API looks like empty dropdowns.
 - Setup E-Books uses hardcoded class, subject and chapter lists, while Generate Questions only offers values that already have saved chapter text.
-- `login_screen.py` contains stray imports (`pydoc`, `turtle`) that are unused.
